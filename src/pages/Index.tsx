@@ -3,6 +3,7 @@ import { SummaryCard } from "@/components/SummaryCard";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import { FinanceChart } from "@/components/FinanceChart";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle } from "lucide-react";
 
 const mockTransactions = [
