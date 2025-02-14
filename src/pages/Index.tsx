@@ -4,7 +4,8 @@ import { TransactionHistory } from "@/components/TransactionHistory";
 import { FinanceChart } from "@/components/FinanceChart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle } from "lucide-react";
+import { PiggyBank, Wallet, BanknoteIcon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const mockTransactions = [
   {
@@ -40,15 +41,36 @@ const mockChartData = [
 ];
 
 const Index = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add Transaction
-          </Button>
+          <div className="flex gap-4">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/manage-savings")}
+            >
+              <PiggyBank className="mr-2 h-4 w-4" />
+              Manage Savings
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/manage-spending")}
+            >
+              <Wallet className="mr-2 h-4 w-4" />
+              Manage Spending
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/manage-lending")}
+            >
+              <BanknoteIcon className="mr-2 h-4 w-4" />
+              Manage Lending
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
