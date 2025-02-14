@@ -16,7 +16,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Pencil, Trash2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface SavingsEntry {
@@ -25,6 +32,7 @@ interface SavingsEntry {
   description: string;
   amount: number;
   goal: string;
+  type: "deposit" | "withdrawal";
 }
 
 const ManageSavings = () => {
@@ -36,6 +44,7 @@ const ManageSavings = () => {
       description: "Emergency Fund",
       amount: 1000,
       goal: "Emergency Savings",
+      type: "deposit",
     },
   ]);
   const [isEditing, setIsEditing] = useState(false);
@@ -43,7 +52,7 @@ const ManageSavings = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentEntry.description || !currentEntry.amount || !currentEntry.goal) {
+    if (!currentEntry.description || !currentEntry.amount || !currentEntry.goal || !currentEntry.type) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -68,7 +77,7 @@ const ManageSavings = () => {
       }]);
       toast({
         title: "Success",
-        description: "Savings entry added successfully",
+        description: `${currentEntry.type === 'deposit' ? 'Deposit' : 'Withdrawal'} added successfully`,
       });
     }
 
@@ -102,7 +111,7 @@ const ManageSavings = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <Input
                   placeholder="Description"
                   value={currentEntry.description || ''}
@@ -119,10 +128,22 @@ const ManageSavings = () => {
                   value={currentEntry.goal || ''}
                   onChange={(e) => setCurrentEntry({ ...currentEntry, goal: e.target.value })}
                 />
+                <Select
+                  value={currentEntry.type}
+                  onValueChange={(value: "deposit" | "withdrawal") => setCurrentEntry({ ...currentEntry, type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="deposit">Deposit</SelectItem>
+                    <SelectItem value="withdrawal">Withdrawal</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button type="submit">
+                  {isEditing ? "Update Entry" : "Add Entry"}
+                </Button>
               </div>
-              <Button type="submit">
-                {isEditing ? "Update Entry" : "Add Entry"}
-              </Button>
             </form>
           </CardContent>
         </Card>
@@ -138,6 +159,7 @@ const ManageSavings = () => {
                   <TableHead>Date</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Amount</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Goal</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -147,7 +169,10 @@ const ManageSavings = () => {
                   <TableRow key={entry.id}>
                     <TableCell>{entry.date}</TableCell>
                     <TableCell>{entry.description}</TableCell>
-                    <TableCell>${entry.amount}</TableCell>
+                    <TableCell className={entry.type === 'withdrawal' ? 'text-red-500' : 'text-green-500'}>
+                      {entry.type === 'withdrawal' ? '-' : '+'}${entry.amount}
+                    </TableCell>
+                    <TableCell>{entry.type}</TableCell>
                     <TableCell>{entry.goal}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">

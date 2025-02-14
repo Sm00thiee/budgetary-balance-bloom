@@ -16,16 +16,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface LendingEntry {
   id: string;
   date: string;
+  borrowerName: string;
   description: string;
   amount: number;
   dueDate: string;
-  status: string;
+  status: "paid" | "pending" | "overdue";
 }
 
 const ManageLending = () => {
@@ -34,10 +42,11 @@ const ManageLending = () => {
     {
       id: "1",
       date: "2024-03-20",
+      borrowerName: "John Doe",
       description: "Personal Loan",
       amount: 5000,
       dueDate: "2024-04-20",
-      status: "Active",
+      status: "pending",
     },
   ]);
   const [isEditing, setIsEditing] = useState(false);
@@ -45,7 +54,7 @@ const ManageLending = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentEntry.description || !currentEntry.amount || !currentEntry.dueDate) {
+    if (!currentEntry.borrowerName || !currentEntry.description || !currentEntry.amount || !currentEntry.dueDate) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -67,7 +76,7 @@ const ManageLending = () => {
         ...currentEntry as LendingEntry,
         id: Date.now().toString(),
         date: new Date().toISOString().split('T')[0],
-        status: "Active",
+        status: "pending",
       }]);
       toast({
         title: "Success",
@@ -92,6 +101,16 @@ const ManageLending = () => {
     });
   };
 
+  const handleStatusChange = (id: string, status: LendingEntry["status"]) => {
+    setEntries(entries.map(entry =>
+      entry.id === id ? { ...entry, status } : entry
+    ));
+    toast({
+      title: "Success",
+      description: "Payment status updated successfully",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="space-y-8">
@@ -105,7 +124,12 @@ const ManageLending = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <Input
+                  placeholder="Borrower Name"
+                  value={currentEntry.borrowerName || ''}
+                  onChange={(e) => setCurrentEntry({ ...currentEntry, borrowerName: e.target.value })}
+                />
                 <Input
                   placeholder="Description"
                   value={currentEntry.description || ''}
@@ -123,10 +147,10 @@ const ManageLending = () => {
                   value={currentEntry.dueDate || ''}
                   onChange={(e) => setCurrentEntry({ ...currentEntry, dueDate: e.target.value })}
                 />
+                <Button type="submit">
+                  {isEditing ? "Update Entry" : "Add Entry"}
+                </Button>
               </div>
-              <Button type="submit">
-                {isEditing ? "Update Entry" : "Add Entry"}
-              </Button>
             </form>
           </CardContent>
         </Card>
@@ -140,6 +164,7 @@ const ManageLending = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
+                  <TableHead>Borrower</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Due Date</TableHead>
@@ -151,10 +176,25 @@ const ManageLending = () => {
                 {entries.map((entry) => (
                   <TableRow key={entry.id}>
                     <TableCell>{entry.date}</TableCell>
+                    <TableCell>{entry.borrowerName}</TableCell>
                     <TableCell>{entry.description}</TableCell>
                     <TableCell>${entry.amount}</TableCell>
                     <TableCell>{entry.dueDate}</TableCell>
-                    <TableCell>{entry.status}</TableCell>
+                    <TableCell>
+                      <Select
+                        value={entry.status}
+                        onValueChange={(value: LendingEntry["status"]) => handleStatusChange(entry.id, value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="paid">Paid</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="overdue">Overdue</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         <Button
