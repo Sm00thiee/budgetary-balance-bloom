@@ -1,26 +1,27 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Area,
-  AreaChart,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
+  Legend,
 } from "recharts";
 
-interface ChartData {
-  name: string;
-  amount: number;
+interface ChartLine {
+  key: string;
+  color: string;
 }
 
 interface FinanceChartProps {
   title: string;
-  data: ChartData[];
-  color: string;
+  data: Record<string, any>[];
+  lines: ChartLine[];
 }
 
-export const FinanceChart = ({ title, data, color }: FinanceChartProps) => {
+export const FinanceChart = ({ title, data, lines }: FinanceChartProps) => {
   return (
     <Card className="animate-fade-in">
       <CardHeader>
@@ -29,7 +30,7 @@ export const FinanceChart = ({ title, data, color }: FinanceChartProps) => {
       <CardContent>
         <div className="h-[200px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
+            <LineChart
               data={data}
               margin={{
                 top: 5,
@@ -53,14 +54,18 @@ export const FinanceChart = ({ title, data, color }: FinanceChartProps) => {
                 tickFormatter={(value) => `$${value}`}
               />
               <Tooltip />
-              <Area
-                type="monotone"
-                dataKey="amount"
-                stroke={color}
-                fill={color}
-                fillOpacity={0.2}
-              />
-            </AreaChart>
+              <Legend />
+              {lines.map((line) => (
+                <Line
+                  key={line.key}
+                  type="monotone"
+                  dataKey={line.key}
+                  stroke={line.color}
+                  strokeWidth={2}
+                  dot={false}
+                />
+              ))}
+            </LineChart>
           </ResponsiveContainer>
         </div>
       </CardContent>
