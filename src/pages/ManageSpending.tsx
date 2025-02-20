@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,8 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface SpendingEntry {
   id: string;
@@ -43,6 +43,7 @@ const CATEGORIES = [
 ];
 
 const ManageSpending = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [entries, setEntries] = useState<SpendingEntry[]>([
     {
@@ -108,7 +109,17 @@ const ManageSpending = () => {
     <div className="min-h-screen bg-background p-8">
       <div className="space-y-8">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight">Manage Spending</h1>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/")}
+              className="mr-4"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
+            <h1 className="text-3xl font-bold tracking-tight">Manage Spending</h1>
+          </div>
         </div>
 
         <Card>

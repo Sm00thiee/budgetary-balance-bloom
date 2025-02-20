@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,40 +23,44 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Pencil, Trash2, ArrowLeft } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
-interface LendingEntry {
+interface EarningsEntry {
   id: string;
   date: string;
-  borrowerName: string;
   description: string;
   amount: number;
-  dueDate: string;
-  status: "paid" | "pending" | "overdue";
+  category: string;
 }
 
-const ManageLending = () => {
+const CATEGORIES = [
+  "Salary",
+  "Investments",
+  "Freelance",
+  "Business",
+  "Other",
+];
+
+const ManageEarnings = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [entries, setEntries] = useState<LendingEntry[]>([
+  const [entries, setEntries] = useState<EarningsEntry[]>([
     {
       id: "1",
       date: "2024-03-20",
-      borrowerName: "John Doe",
-      description: "Personal Loan",
+      description: "Monthly Salary",
       amount: 5000,
-      dueDate: "2024-04-20",
-      status: "pending",
+      category: "Salary",
     },
   ]);
   const [isEditing, setIsEditing] = useState(false);
-  const [currentEntry, setCurrentEntry] = useState<Partial<LendingEntry>>({});
+  const [currentEntry, setCurrentEntry] = useState<Partial<EarningsEntry>>({});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentEntry.borrowerName || !currentEntry.description || !currentEntry.amount || !currentEntry.dueDate) {
+    if (!currentEntry.description || !currentEntry.amount || !currentEntry.category) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -70,18 +75,17 @@ const ManageLending = () => {
       ));
       toast({
         title: "Success",
-        description: "Loan entry updated successfully",
+        description: "Earnings entry updated successfully",
       });
     } else {
       setEntries([...entries, {
-        ...currentEntry as LendingEntry,
+        ...currentEntry as EarningsEntry,
         id: Date.now().toString(),
         date: new Date().toISOString().split('T')[0],
-        status: "pending",
       }]);
       toast({
         title: "Success",
-        description: "Loan entry added successfully",
+        description: "Earnings entry added successfully",
       });
     }
 
@@ -89,7 +93,7 @@ const ManageLending = () => {
     setIsEditing(false);
   };
 
-  const handleEdit = (entry: LendingEntry) => {
+  const handleEdit = (entry: EarningsEntry) => {
     setCurrentEntry(entry);
     setIsEditing(true);
   };
@@ -98,17 +102,7 @@ const ManageLending = () => {
     setEntries(entries.filter(entry => entry.id !== id));
     toast({
       title: "Success",
-      description: "Loan entry deleted successfully",
-    });
-  };
-
-  const handleStatusChange = (id: string, status: LendingEntry["status"]) => {
-    setEntries(entries.map(entry =>
-      entry.id === id ? { ...entry, status } : entry
-    ));
-    toast({
-      title: "Success",
-      description: "Payment status updated successfully",
+      description: "Earnings entry deleted successfully",
     });
   };
 
@@ -125,22 +119,17 @@ const ManageLending = () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Button>
-            <h1 className="text-3xl font-bold tracking-tight">Manage Lending</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Manage Earnings</h1>
           </div>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Add New Loan Entry</CardTitle>
+            <CardTitle>Add New Earnings Entry</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <Input
-                  placeholder="Borrower Name"
-                  value={currentEntry.borrowerName || ''}
-                  onChange={(e) => setCurrentEntry({ ...currentEntry, borrowerName: e.target.value })}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Input
                   placeholder="Description"
                   value={currentEntry.description || ''}
@@ -152,12 +141,21 @@ const ManageLending = () => {
                   value={currentEntry.amount || ''}
                   onChange={(e) => setCurrentEntry({ ...currentEntry, amount: parseFloat(e.target.value) })}
                 />
-                <Input
-                  type="date"
-                  placeholder="Due Date"
-                  value={currentEntry.dueDate || ''}
-                  onChange={(e) => setCurrentEntry({ ...currentEntry, dueDate: e.target.value })}
-                />
+                <Select
+                  value={currentEntry.category}
+                  onValueChange={(value) => setCurrentEntry({ ...currentEntry, category: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Button type="submit">
                   {isEditing ? "Update Entry" : "Add Entry"}
                 </Button>
@@ -168,18 +166,16 @@ const ManageLending = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Active Loans</CardTitle>
+            <CardTitle>Earnings History</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
-                  <TableHead>Borrower</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Amount</TableHead>
-                  <TableHead>Due Date</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Category</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -187,25 +183,9 @@ const ManageLending = () => {
                 {entries.map((entry) => (
                   <TableRow key={entry.id}>
                     <TableCell>{entry.date}</TableCell>
-                    <TableCell>{entry.borrowerName}</TableCell>
                     <TableCell>{entry.description}</TableCell>
                     <TableCell>${entry.amount}</TableCell>
-                    <TableCell>{entry.dueDate}</TableCell>
-                    <TableCell>
-                      <Select
-                        value={entry.status}
-                        onValueChange={(value: LendingEntry["status"]) => handleStatusChange(entry.id, value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="paid">Paid</SelectItem>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="overdue">Overdue</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
+                    <TableCell>{entry.category}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         <Button
@@ -235,4 +215,4 @@ const ManageLending = () => {
   );
 };
 
-export default ManageLending;
+export default ManageEarnings;

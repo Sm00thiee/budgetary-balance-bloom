@@ -87,6 +87,13 @@ const Index = () => {
           <div className="flex gap-4">
             <Button
               variant="outline"
+              onClick={() => navigate("/manage-earnings")}
+            >
+              <DollarSign className="mr-2 h-4 w-4" />
+              Manage Earnings
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => navigate("/manage-savings")}
             >
               <PiggyBank className="mr-2 h-4 w-4" />
