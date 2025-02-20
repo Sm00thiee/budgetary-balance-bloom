@@ -6,78 +6,26 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PiggyBank, Wallet, BanknoteIcon, DollarSign } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-const mockTransactions = [
-  {
-    id: "1",
-    date: "2024-03-20",
-    description: "Savings deposit",
-    amount: 1000,
-    category: "Savings",
-  },
-  {
-    id: "2",
-    date: "2024-03-19",
-    description: "Loan payment",
-    amount: -500,
-    category: "Lending",
-  },
-  {
-    id: "3",
-    date: "2024-03-18",
-    description: "Grocery shopping",
-    amount: -150,
-    category: "Spending",
-  },
-];
-
-const mockChartData = [
-  {
-    name: "Jan",
-    earnings: 5000,
-    savings: 1200,
-    loans: 800,
-    spending: 2400,
-  },
-  {
-    name: "Feb",
-    earnings: 5200,
-    savings: 1800,
-    loans: 700,
-    spending: 2100,
-  },
-  {
-    name: "Mar",
-    earnings: 5500,
-    savings: 2400,
-    loans: 600,
-    spending: 1900,
-  },
-  {
-    name: "Apr",
-    earnings: 5800,
-    savings: 2800,
-    loans: 500,
-    spending: 1800,
-  },
-  {
-    name: "May",
-    earnings: 6000,
-    savings: 3200,
-    loans: 400,
-    spending: 1700,
-  },
-  {
-    name: "Jun",
-    earnings: 6200,
-    savings: 3800,
-    loans: 300,
-    spending: 1600,
-  },
-];
+import { dashboardService } from "@/services/dashboard.service";
+import { useQuery } from "@tanstack/react-query";
 
 const Index = () => {
   const navigate = useNavigate();
+
+  const { data: summaryData } = useQuery({
+    queryKey: ['dashboardSummary'],
+    queryFn: dashboardService.getSummary,
+  });
+
+  const { data: transactions } = useQuery({
+    queryKey: ['transactions'],
+    queryFn: dashboardService.getTransactions,
+  });
+
+  const { data: chartData } = useQuery({
+    queryKey: ['chartData'],
+    queryFn: dashboardService.getChartData,
+  });
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -119,7 +67,7 @@ const Index = () => {
         <div className="grid gap-4 md:grid-cols-4">
           <SummaryCard
             title="Monthly Earnings"
-            amount="$6,200"
+            amount={`$${summaryData?.monthlyEarnings || 0}`}
             description="+5.2% from last month"
             className="bg-finance-earnings hover:bg-finance-earnings-dark transition-colors"
           >
@@ -127,7 +75,7 @@ const Index = () => {
           </SummaryCard>
           <SummaryCard
             title="Total Savings"
-            amount="$3,800"
+            amount={`$${summaryData?.totalSavings || 0}`}
             description="+20.1% from last month"
             className="bg-finance-savings hover:bg-finance-savings-dark transition-colors"
           >
@@ -135,7 +83,7 @@ const Index = () => {
           </SummaryCard>
           <SummaryCard
             title="Active Loans"
-            amount="$12,000"
+            amount={`$${summaryData?.activeLoans || 0}`}
             description="Next payment: $500 due Apr 1"
             className="bg-finance-lending hover:bg-finance-lending-dark transition-colors"
           >
@@ -143,7 +91,7 @@ const Index = () => {
           </SummaryCard>
           <SummaryCard
             title="Monthly Spending"
-            amount="$2,450"
+            amount={`$${summaryData?.monthlySpending || 0}`}
             description="75% of monthly budget"
             className="bg-finance-spending hover:bg-finance-spending-dark transition-colors"
           >
@@ -155,7 +103,7 @@ const Index = () => {
           <div className="md:col-span-4">
             <FinanceChart
               title="Financial Flow Overview"
-              data={mockChartData}
+              data={chartData || []}
               lines={[
                 { key: "earnings", color: "#94A3B8" },
                 { key: "savings", color: "#D1E6B8" },
@@ -172,7 +120,7 @@ const Index = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <TransactionHistory transactions={mockTransactions} />
+                <TransactionHistory transactions={transactions || []} />
               </CardContent>
             </Card>
           </div>
