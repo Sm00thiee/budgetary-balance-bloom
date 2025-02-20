@@ -4,7 +4,7 @@ import { TransactionHistory } from "@/components/TransactionHistory";
 import { FinanceChart } from "@/components/FinanceChart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PiggyBank, Wallet, BanknoteIcon, DollarSign } from "lucide-react";
+import { PiggyBank, Wallet, BanknoteIcon, DollarSign, UserCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { dashboardService } from "@/services/dashboard.service";
 import { useQuery } from "@tanstack/react-query";
@@ -60,6 +60,13 @@ const Index = () => {
             >
               <BanknoteIcon className="mr-2 h-4 w-4" />
               Manage Lending
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/profile")}
+            >
+              <UserCircle className="mr-2 h-4 w-4" />
+              Profile
             </Button>
           </div>
         </div>

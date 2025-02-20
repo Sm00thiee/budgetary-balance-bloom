@@ -25,8 +25,8 @@ const Login = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would handle authentication here
     if (formData.email && formData.password) {
+      localStorage.setItem("isAuthenticated", "true");
       toast({
         title: "Success",
         description: "Successfully logged in",
