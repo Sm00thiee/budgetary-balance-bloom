@@ -15,12 +15,14 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Save, Upload, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { api } from "@/services/api";
 
 const UserProfile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [userInfo, setUserInfo] = useState({
-    name: "John Doe",
+    firstName: "John",
+    lastName: "Doe",
     email: "john@example.com",
     currentPassword: "",
     newPassword: "",
@@ -28,16 +30,29 @@ const UserProfile = () => {
     avatar: "",
   });
 
-  const handleUpdateProfile = (e: React.FormEvent) => {
+  const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would update the user profile here
-    toast({
-      title: "Success",
-      description: "Profile updated successfully",
-    });
+    try {
+      await api.put("/user/profile", {
+        firstName: userInfo.firstName,
+        lastName: userInfo.lastName,
+        email: userInfo.email,
+      });
+      
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update profile",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleUpdatePassword = (e: React.FormEvent) => {
+  const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userInfo.currentPassword || !userInfo.newPassword || !userInfo.confirmPassword) {
       toast({
@@ -55,16 +70,30 @@ const UserProfile = () => {
       });
       return;
     }
-    toast({
-      title: "Success",
-      description: "Password updated successfully",
-    });
-    setUserInfo(prev => ({
-      ...prev,
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    }));
+
+    try {
+      await api.put("/user/password", {
+        currentPassword: userInfo.currentPassword,
+        newPassword: userInfo.newPassword,
+      });
+
+      toast({
+        title: "Success",
+        description: "Password updated successfully",
+      });
+      setUserInfo(prev => ({
+        ...prev,
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      }));
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update password",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleLogout = () => {
@@ -102,22 +131,34 @@ const UserProfile = () => {
               <div className="flex items-center space-x-4">
                 <Avatar className="h-20 w-20">
                   <AvatarImage src={userInfo.avatar || ""} />
-                  <AvatarFallback>{userInfo.name.charAt(0)}</AvatarFallback>
+                  <AvatarFallback>{userInfo.firstName.charAt(0)}{userInfo.lastName.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <Button type="button" variant="outline">
                   <Upload className="mr-2 h-4 w-4" />
                   Change Avatar
                 </Button>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  value={userInfo.name}
-                  onChange={(e) =>
-                    setUserInfo({ ...userInfo, name: e.target.value })
-                  }
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    value={userInfo.firstName}
+                    onChange={(e) =>
+                      setUserInfo({ ...userInfo, firstName: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    value={userInfo.lastName}
+                    onChange={(e) =>
+                      setUserInfo({ ...userInfo, lastName: e.target.value })
+                    }
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
