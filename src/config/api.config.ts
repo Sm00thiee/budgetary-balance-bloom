@@ -1,7 +1,10 @@
-
 export const API_CONFIG = {
   baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000',
   useMockData: true, // Toggle this to false to use real API data
+  mockCredentials: {
+    username: 'admin',
+    password: '123'
+  },
   endpoints: {
     earnings: {
       list: '/api/earnings',
@@ -33,6 +36,11 @@ export const API_CONFIG = {
       transactions: '/api/dashboard/transactions',
       chart: '/api/dashboard/chart',
     },
+    auth: {
+      login: '/api/auth/login',
+      register: '/api/auth/register',
+      profile: '/api/auth/profile',
+    }
   },
   mockData: {
     transactions: [
@@ -102,5 +110,58 @@ export const API_CONFIG = {
         spending: 1600,
       },
     ],
+    auth: {
+      token: 'mock-jwt-token',
+      user: {
+        id: 1,
+        username: 'admin',
+        firstName: 'Admin',
+        lastName: 'User',
+        email: 'admin@example.com'
+      }
+    }
   },
+  dtos: {
+    savings: {
+      create: {
+        userId: 0,
+        goal: 0,
+        amount: 0,
+      }
+    },
+    spending: {
+      create: {
+        issueDate: new Date().toISOString(),
+        amount: 0,
+        description: ''
+      }
+    }
+  }
 };
+
+const handleMockAuth = (username: string, password: string) => {
+  const { mockCredentials, mockData } = API_CONFIG;
+  if (username === mockCredentials.username && password === mockCredentials.password) {
+    return Promise.resolve(mockData.auth);
+  }
+  return Promise.reject(new Error('Invalid credentials'));
+};
+
+export const checkMockAuth = () => {
+  if (API_CONFIG.useMockData) {
+    const { username, password } = API_CONFIG.mockCredentials;
+    handleMockAuth(username, password)
+      .then((response) => {
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('user', JSON.stringify(response.user));
+      })
+      .catch(() => {
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('user');
+      });
+  }
+};
+
+if (API_CONFIG.useMockData) {
+  checkMockAuth();
+}

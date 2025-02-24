@@ -39,12 +39,28 @@ const Login = () => {
 
     setIsLoading(true);
     try {
-      await api.post("/session/authenticate", {
-        Username: formData.username,
-        Password: formData.password,
-      });
+      let response;
+      
+      if (API_CONFIG.useMockData) {
+        // Handle mock authentication
+        const { mockCredentials, mockData } = API_CONFIG;
+        if (formData.username === mockCredentials.username && 
+            formData.password === mockCredentials.password) {
+          response = mockData.auth;
+        } else {
+          throw new Error('Invalid credentials');
+        }
+      } else {
+        // Handle real API authentication
+        response = await api.post("/session/authenticate", {
+          Username: formData.username,
+          Password: formData.password,
+        });
+      }
       
       localStorage.setItem("isAuthenticated", "true");
+      localStorage.setItem("user", JSON.stringify(response.user));
+      
       toast({
         title: "Success",
         description: "Successfully logged in",
