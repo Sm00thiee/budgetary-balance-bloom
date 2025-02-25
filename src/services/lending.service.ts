@@ -1,9 +1,18 @@
-
 import { api } from './api';
 import { API_CONFIG } from '@/config/api.config';
 
+interface GetPageRequestDto {
+  pageNumber?: number;
+  itemsPerPage?: number;
+  orderBy?: string;
+}
+
+interface GetLendingRequestDto extends GetPageRequestDto {
+  borrowName?: string;  // Note: This appears to be "BorrowName" in C# but I'll use camelCase for TypeScript
+}
+
 export const lendingService = {
-  getAll: () => api.get(API_CONFIG.endpoints.lending.list),
+  getAll: (params?: GetLendingRequestDto) => api.post(API_CONFIG.endpoints.lending.find, params),
   
   create: (data: {
     borrowerName: string;

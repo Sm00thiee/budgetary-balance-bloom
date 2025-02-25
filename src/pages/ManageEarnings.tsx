@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -26,6 +25,8 @@ import {
 import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { earningsService } from "@/services/earnings.service";
 
 interface EarningsEntry {
   id: string;
@@ -46,10 +47,89 @@ const CATEGORIES = [
 const ManageEarnings = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [entries, setEntries] = useState<EarningsEntry[]>([
-  ]);
+  const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [currentEntry, setCurrentEntry] = useState<Partial<EarningsEntry>>({});
+
+  // Fetch earnings data
+  const { data: entries = [] } = useQuery({
+    queryKey: ['earnings'],
+    queryFn: earningsService.getAll,
+  });
+
+  // Create mutation
+  const createMutation = useMutation({
+    mutationFn: (data: {
+      description: string;
+      amount: number;
+      date: string;
+      category: string;
+    }) => earningsService.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['earnings'] });
+      toast({
+        title: "Success",
+        description: "Earnings entry added successfully",
+      });
+      setCurrentEntry({});
+      setIsEditing(false);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to add earnings entry",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { 
+      id: string; 
+      data: {
+        description?: string;
+        amount?: number;
+        date?: string;
+        category?: string;
+      }
+    }) => earningsService.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['earnings'] });
+      toast({
+        title: "Success",
+        description: "Earnings entry updated successfully",
+      });
+      setCurrentEntry({});
+      setIsEditing(false);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update earnings entry",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => earningsService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['earnings'] });
+      toast({
+        title: "Success",
+        description: "Earnings entry deleted successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete earnings entry",
+        variant: "destructive",
+      });
+    }
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,27 +143,23 @@ const ManageEarnings = () => {
     }
 
     if (isEditing && currentEntry.id) {
-      setEntries(entries.map(entry => 
-        entry.id === currentEntry.id ? { ...entry, ...currentEntry } : entry
-      ));
-      toast({
-        title: "Success",
-        description: "Earnings entry updated successfully",
+      updateMutation.mutate({ 
+        id: currentEntry.id, 
+        data: {
+          description: currentEntry.description,
+          amount: currentEntry.amount,
+          category: currentEntry.category,
+          date: currentEntry.date
+        } 
       });
     } else {
-      setEntries([...entries, {
-        ...currentEntry as EarningsEntry,
-        id: Date.now().toString(),
-        date: new Date().toISOString().split('T')[0],
-      }]);
-      toast({
-        title: "Success",
-        description: "Earnings entry added successfully",
+      createMutation.mutate({
+        description: currentEntry.description!,
+        amount: currentEntry.amount!,
+        category: currentEntry.category!,
+        date: new Date().toISOString().split('T')[0]
       });
     }
-
-    setCurrentEntry({});
-    setIsEditing(false);
   };
 
   const handleEdit = (entry: EarningsEntry) => {
@@ -92,11 +168,7 @@ const ManageEarnings = () => {
   };
 
   const handleDelete = (id: string) => {
-    setEntries(entries.filter(entry => entry.id !== id));
-    toast({
-      title: "Success",
-      description: "Earnings entry deleted successfully",
-    });
+    deleteMutation.mutate(id);
   };
 
   return (
@@ -149,7 +221,7 @@ const ManageEarnings = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button type="submit">
+                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
                   {isEditing ? "Update Entry" : "Add Entry"}
                 </Button>
               </div>
@@ -173,9 +245,9 @@ const ManageEarnings = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {entries.map((entry) => (
+                {entries.map((entry: any) => (
                   <TableRow key={entry.id}>
-                    <TableCell>{entry.date}</TableCell>
+                    <TableCell>{new Date(entry.createdDate).toLocaleDateString()}</TableCell>
                     <TableCell>{entry.description}</TableCell>
                     <TableCell>${entry.amount}</TableCell>
                     <TableCell>{entry.category}</TableCell>
@@ -184,7 +256,13 @@ const ManageEarnings = () => {
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() => handleEdit(entry)}
+                          onClick={() => handleEdit({
+                            id: entry.id,
+                            date: new Date(entry.createdDate).toISOString().split('T')[0],
+                            description: entry.description,
+                            amount: entry.amount,
+                            category: entry.category
+                          })}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -192,6 +270,7 @@ const ManageEarnings = () => {
                           variant="outline"
                           size="icon"
                           onClick={() => handleDelete(entry.id)}
+                          disabled={deleteMutation.isPending}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

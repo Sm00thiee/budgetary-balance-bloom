@@ -1,4 +1,3 @@
-
 import { SummaryCard } from "@/components/SummaryCard";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import { FinanceChart } from "@/components/FinanceChart";
@@ -8,9 +7,14 @@ import { PiggyBank, Wallet, BanknoteIcon, DollarSign, UserCircle } from "lucide-
 import { useNavigate } from "react-router-dom";
 import { dashboardService } from "@/services/dashboard.service";
 import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Label } from "@/components/ui/label";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
   const { data: summaryData } = useQuery({
     queryKey: ['dashboardSummary'],
@@ -23,9 +27,22 @@ const Index = () => {
   });
 
   const { data: chartData } = useQuery({
-    queryKey: ['chartData'],
-    queryFn: dashboardService.getChartData,
+    queryKey: ['chartData', startDate, endDate],
+    queryFn: () => dashboardService.getChartData({ 
+      startDate, 
+      endDate 
+    }),
   });
+
+  // First, sort and process the data for the chart
+  const processedChartData = useMemo(() => {
+    if (!chartData) return [];
+    
+    // Sort data chronologically
+    return [...chartData].sort((a, b) => 
+      new Date(a.yearMonth).getTime() - new Date(b.yearMonth).getTime()
+    );
+  }, [chartData]);
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -108,16 +125,41 @@ const Index = () => {
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
           <div className="md:col-span-4">
-            <FinanceChart
-              title="Financial Flow Overview"
-              data={chartData || []}
-              lines={[
-                { key: "earnings", color: "#94A3B8" },
-                { key: "savings", color: "#D1E6B8" },
-                { key: "loans", color: "#FFB4B4" },
-                { key: "spending", color: "#FFE4B8" }
-              ]}
-            />
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Financial Flow Overview</CardTitle>
+                <div className="flex gap-4 items-center">
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="startDate">From</Label>
+                    <DatePicker
+                      id="startDate"
+                      date={startDate}
+                      onSelect={setStartDate}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="endDate">To</Label>
+                    <DatePicker
+                      id="endDate"
+                      date={endDate}
+                      onSelect={setEndDate}
+                    />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <FinanceChart
+                  title="Financial Overview"
+                  data={processedChartData || []}
+                  lines={[
+                    { key: "earnings", color: "#94A3B8" },
+                    { key: "savings", color: "#D1E6B8" },
+                    { key: "loans", color: "#FFB4B4" },
+                    { key: "spending", color: "#FFE4B8" }
+                  ]}
+                />
+              </CardContent>
+            </Card>
           </div>
           <div className="md:col-span-3">
             <Card className="animate-fade-in">

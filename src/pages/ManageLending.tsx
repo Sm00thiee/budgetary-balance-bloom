@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -25,28 +25,64 @@ import {
 import { Pencil, Trash2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { lendingService } from "@/services/lending.service";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 interface LendingEntry {
   id: string;
   date: string;
-  borrowerName: string;
+  borrowName: string;
   description: string;
   amount: number;
   dueDate: string;
   status: "paid" | "pending" | "overdue";
+  interestRate?: number;
 }
 
 const ManageLending = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [entries, setEntries] = useState<LendingEntry[]>([
-  ]);
+  const [entries, setEntries] = useState<LendingEntry[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentEntry, setCurrentEntry] = useState<Partial<LendingEntry>>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [totalItems, setTotalItems] = useState(0);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const fetchLendings = async () => {
+    try {
+      const response = await lendingService.getAll({
+        pageNumber: currentPage,
+        itemsPerPage: itemsPerPage,
+        borrowName: searchTerm || undefined,
+      });
+      setEntries(response.data.items || response.data);
+      setTotalItems(response.data.totalCount || response.data.length);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch lending data",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchLendings();
+  }, [currentPage, searchTerm]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentEntry.borrowerName || !currentEntry.description || !currentEntry.amount || !currentEntry.dueDate) {
+    if (!currentEntry.borrowName || !currentEntry.description || !currentEntry.amount || !currentEntry.dueDate) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -56,6 +92,7 @@ const ManageLending = () => {
     }
 
     if (isEditing && currentEntry.id) {
+      await lendingService.update(currentEntry.id, currentEntry as LendingEntry);
       setEntries(entries.map(entry => 
         entry.id === currentEntry.id ? { ...entry, ...currentEntry } : entry
       ));
@@ -64,12 +101,14 @@ const ManageLending = () => {
         description: "Loan entry updated successfully",
       });
     } else {
-      setEntries([...entries, {
+      const newEntry = {
         ...currentEntry as LendingEntry,
         id: Date.now().toString(),
         date: new Date().toISOString().split('T')[0],
         status: "pending",
-      }]);
+      };
+      await lendingService.create(newEntry);
+      setEntries([...entries, newEntry]);
       toast({
         title: "Success",
         description: "Loan entry added successfully",
@@ -85,7 +124,8 @@ const ManageLending = () => {
     setIsEditing(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    await lendingService.delete(id);
     setEntries(entries.filter(entry => entry.id !== id));
     toast({
       title: "Success",
@@ -93,7 +133,8 @@ const ManageLending = () => {
     });
   };
 
-  const handleStatusChange = (id: string, status: LendingEntry["status"]) => {
+  const handleStatusChange = async (id: string, status: LendingEntry["status"]) => {
+    await lendingService.updateStatus(id, status);
     setEntries(entries.map(entry =>
       entry.id === id ? { ...entry, status } : entry
     ));
@@ -101,6 +142,15 @@ const ManageLending = () => {
       title: "Success",
       description: "Payment status updated successfully",
     });
+  };
+
+  const indexOfLastEntry = currentPage * itemsPerPage;
+  const indexOfFirstEntry = indexOfLastEntry - itemsPerPage;
+  const currentEntries = entries.slice(indexOfFirstEntry, indexOfLastEntry);
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   return (
@@ -129,8 +179,8 @@ const ManageLending = () => {
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <Input
                   placeholder="Borrower Name"
-                  value={currentEntry.borrowerName || ''}
-                  onChange={(e) => setCurrentEntry({ ...currentEntry, borrowerName: e.target.value })}
+                  value={currentEntry.borrowName || ''}
+                  onChange={(e) => setCurrentEntry({ ...currentEntry, borrowName: e.target.value })}
                 />
                 <Input
                   placeholder="Description"
@@ -158,8 +208,16 @@ const ManageLending = () => {
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Active Loans</CardTitle>
+            <div className="w-1/3">
+              <Input
+                placeholder="Search by borrower name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-sm"
+              />
+            </div>
           </CardHeader>
           <CardContent>
             <Table>
@@ -175,10 +233,10 @@ const ManageLending = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {entries.map((entry) => (
+                {currentEntries.map((entry) => (
                   <TableRow key={entry.id}>
                     <TableCell>{entry.date}</TableCell>
-                    <TableCell>{entry.borrowerName}</TableCell>
+                    <TableCell>{entry.borrowName}</TableCell>
                     <TableCell>{entry.description}</TableCell>
                     <TableCell>${entry.amount}</TableCell>
                     <TableCell>{entry.dueDate}</TableCell>
@@ -219,6 +277,43 @@ const ManageLending = () => {
                 ))}
               </TableBody>
             </Table>
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  />
+                </PaginationItem>
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const pageNumber = currentPage > 3 
+                    ? currentPage - 3 + i 
+                    : i + 1;
+                  
+                  return pageNumber <= totalPages ? (
+                    <PaginationItem key={pageNumber}>
+                      <PaginationLink
+                        onClick={() => handlePageChange(pageNumber)}
+                        isActive={pageNumber === currentPage}
+                      >
+                        {pageNumber}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ) : null;
+                })}
+                {totalPages > 5 && currentPage < totalPages - 2 && (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </CardContent>
         </Card>
       </div>

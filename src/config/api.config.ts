@@ -1,4 +1,3 @@
-
 export const API_CONFIG = {
   baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5193',
   useMockData: false,
@@ -10,23 +9,23 @@ export const API_CONFIG = {
       delete: '/api/earnings/:id',
     },
     savings: {
-      list: '/api/savings',
-      create: '/api/savings',
-      update: '/api/savings/:id',
-      delete: '/api/savings/:id',
+      list: '/api/savings/getsavings',
+      create: '/api/savings/createsavings',
+      update: '/api/savings/updatesavings',
+      delete: '/api/savings/deletesavings',
     },
     lending: {
-      list: '/api/lending',
-      create: '/api/lending',
-      update: '/api/lending/:id',
-      delete: '/api/lending/:id',
+      find: '/api/lendings',
+      create: '/api/lendings',
+      update: '/api/lendings/:id',
+      delete: '/api/lendings/:id',
       updateStatus: '/api/lending/:id/status',
     },
     spending: {
-      list: '/api/spending',
-      create: '/api/spending',
-      update: '/api/spending/:id',
-      delete: '/api/spending/:id',
+      list: '/api/spendings',
+      create: '/api/spendings',
+      update: '/api/spendings/:id',
+      delete: '/api/spendings/:id',
     },
     dashboard: {
       summary: '/api/dashboard/summary',
