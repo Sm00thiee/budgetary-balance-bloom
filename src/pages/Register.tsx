@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus } from "lucide-react";
 import { api } from "@/services/api";
+import { API_CONFIG } from "@/config/api.config";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -51,7 +52,7 @@ const Register = () => {
 
     setIsLoading(true);
     try {
-      await api.post("/session/register", {
+      await api.post(API_CONFIG.endpoints.auth.register, {
         Username: formData.username,
         Password: formData.password,
         Email: formData.email,
