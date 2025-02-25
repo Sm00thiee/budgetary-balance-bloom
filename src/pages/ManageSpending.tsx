@@ -46,13 +46,6 @@ const ManageSpending = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [entries, setEntries] = useState<SpendingEntry[]>([
-    {
-      id: "1",
-      date: "2024-03-20",
-      description: "Grocery Shopping",
-      amount: 150,
-      category: "Groceries",
-    },
   ]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentEntry, setCurrentEntry] = useState<Partial<SpendingEntry>>({});

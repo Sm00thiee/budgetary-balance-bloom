@@ -47,13 +47,6 @@ const ManageEarnings = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [entries, setEntries] = useState<EarningsEntry[]>([
-    {
-      id: "1",
-      date: "2024-03-20",
-      description: "Monthly Salary",
-      amount: 5000,
-      category: "Salary",
-    },
   ]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentEntry, setCurrentEntry] = useState<Partial<EarningsEntry>>({});

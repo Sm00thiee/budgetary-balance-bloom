@@ -40,15 +40,6 @@ const ManageLending = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [entries, setEntries] = useState<LendingEntry[]>([
-    {
-      id: "1",
-      date: "2024-03-20",
-      borrowerName: "John Doe",
-      description: "Personal Loan",
-      amount: 5000,
-      dueDate: "2024-04-20",
-      status: "pending",
-    },
   ]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentEntry, setCurrentEntry] = useState<Partial<LendingEntry>>({});

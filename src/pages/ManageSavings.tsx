@@ -39,14 +39,6 @@ const ManageSavings = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [entries, setEntries] = useState<SavingsEntry[]>([
-    {
-      id: "1",
-      date: "2024-03-20",
-      description: "Emergency Fund",
-      amount: 1000,
-      goal: "Emergency Savings",
-      type: "deposit",
-    },
   ]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentEntry, setCurrentEntry] = useState<Partial<SavingsEntry>>({});
