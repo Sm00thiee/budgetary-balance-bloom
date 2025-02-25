@@ -37,7 +37,7 @@ export const API_CONFIG = {
       chart: '/api/dashboard/chart',
     },
     auth: {
-      login: '/api/session/authenticate',
+      login: '/api/sessions/authenticate',
       register: '/api/user/register',
       profile: '/api/auth/profile',
     }

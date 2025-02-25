@@ -52,7 +52,7 @@ const Login = () => {
         }
       } else {
         // Handle real API authentication
-        response = await api.post("/session/authenticate", {
+        response = await api.post(API_CONFIG.endpoints.auth.login, {
           Username: formData.username,
           Password: formData.password,
         });
