@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { API_CONFIG } from "@/config/api.config";
 
@@ -22,7 +23,7 @@ export const api = {
 
   post: async (url: string, data: any, params: Record<string, string> = {}) => {
     const response = await axios.post(formatUrl(url, params), data, {
-      withCredentials: false,
+      withCredentials: true,
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
