@@ -11,7 +11,12 @@ const formatUrl = (url: string, params: Record<string, string> = {}) => {
 
 export const api = {
   get: async (url: string, params: Record<string, string> = {}) => {
-    const response = await fetch(formatUrl(url, params));
+    const response = await fetch(formatUrl(url, params), {
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
     if (!response.ok) throw new Error('Network response was not ok');
     return response.json();
   },
@@ -19,8 +24,10 @@ export const api = {
   post: async (url: string, data: any, params: Record<string, string> = {}) => {
     const response = await fetch(formatUrl(url, params), {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: JSON.stringify(data),
     });
@@ -31,8 +38,10 @@ export const api = {
   put: async (url: string, data: any, params: Record<string, string> = {}) => {
     const response = await fetch(formatUrl(url, params), {
       method: 'PUT',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: JSON.stringify(data),
     });
@@ -43,6 +52,10 @@ export const api = {
   delete: async (url: string, params: Record<string, string> = {}) => {
     const response = await fetch(formatUrl(url, params), {
       method: 'DELETE',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
+      },
     });
     if (!response.ok) throw new Error('Network response was not ok');
     return response.json();
