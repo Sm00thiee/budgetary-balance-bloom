@@ -214,9 +214,10 @@ const ManageSavings = () => {
       });
     },
     onError: (error: any) => {
+      console.error('Delete mutation error:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to delete savings account",
+        description: error.message || "Failed to delete savings account. Please try again.",
         variant: "destructive",
       });
     },
@@ -297,6 +298,11 @@ const ManageSavings = () => {
   };
 
   const handleDelete = (id: number) => {
+    console.log(`Attempting to delete savings account with ID: ${id}`);
+    toast({
+      title: "Processing",
+      description: "Deleting savings account...",
+    });
     deleteSavingsMutation.mutate(id);
   };
 
@@ -449,13 +455,25 @@ const ManageSavings = () => {
                             Are you sure you want to delete this savings account? This action cannot be undone.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
+                        
+                        {deleteSavingsMutation.isError && (
+                          <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-md text-xs overflow-auto max-h-40">
+                            <p className="font-semibold mb-1">Error Details:</p>
+                            <p>{deleteSavingsMutation.error instanceof Error ? deleteSavingsMutation.error.message : 'Unknown error'}</p>
+                            <p className="font-semibold mt-2 mb-1">API Configuration:</p>
+                            <p>Endpoint: {API_CONFIG.endpoints.savings.delete}</p>
+                            <p>Payload: {JSON.stringify({ id: saving.id })}</p>
+                          </div>
+                        )}
+                        
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() => handleDelete(saving.id)}
                             className="bg-red-500 hover:bg-red-600"
+                            disabled={deleteSavingsMutation.isPending}
                           >
-                            Delete
+                            {deleteSavingsMutation.isPending ? "Deleting..." : "Delete"}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>

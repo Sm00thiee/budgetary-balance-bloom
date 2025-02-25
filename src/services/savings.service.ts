@@ -51,8 +51,20 @@ export const savingsService = {
     return api.post(API_CONFIG.endpoints.savings.update, payload);
   },
     
-  delete: (id: number) => 
-    api.post(API_CONFIG.endpoints.savings.delete, { id }),
+  delete: async (id: number) => {
+    try {
+      console.log(`Deleting savings account with ID: ${id}`);
+      // Append the ID to the URL as a path parameter
+      const deleteUrl = `${API_CONFIG.endpoints.savings.delete}/${id}`;
+      console.log(`Using endpoint: ${deleteUrl}`);
+      const response = await api.delete(deleteUrl);
+      console.log('Delete response:', response);
+      return response;
+    } catch (error) {
+      console.error(`Error deleting savings account with ID ${id}:`, error);
+      throw new Error('Failed to delete savings account. Please try again.');
+    }
+  },
     
   deposit: (data: DepositWithdrawRequest) =>
     api.post('/api/savings/deposit', data),

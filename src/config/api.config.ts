@@ -12,7 +12,7 @@ export const API_CONFIG = {
       list: '/api/savings/getsavings',
       create: '/api/savings/createsavings',
       update: '/api/savings/updatesavings',
-      delete: '/api/savings/deletesavings',
+      delete: '/api/savings',
     },
     lending: {
       find: '/api/lendings',
