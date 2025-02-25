@@ -1,6 +1,6 @@
 export const API_CONFIG = {
-  baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000',
-  useMockData: true, // Toggle this to false to use real API data
+  baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5193',
+  useMockData: false, // Toggle this to false to use real API data
   mockCredentials: {
     username: 'admin',
     password: '123'
@@ -37,8 +37,8 @@ export const API_CONFIG = {
       chart: '/api/dashboard/chart',
     },
     auth: {
-      login: '/api/auth/login',
-      register: '/api/auth/register',
+      login: '/api/session/authenticate',
+      register: '/api/user/register',
       profile: '/api/auth/profile',
     }
   },

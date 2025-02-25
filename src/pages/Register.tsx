@@ -52,6 +52,7 @@ const Register = () => {
 
     setIsLoading(true);
     try {
+      console.log(API_CONFIG.endpoints.auth.register)
       await api.post(API_CONFIG.endpoints.auth.register, {
         Username: formData.username,
         Password: formData.password,
