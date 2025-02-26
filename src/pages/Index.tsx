@@ -3,18 +3,21 @@ import { TransactionHistory } from "@/components/TransactionHistory";
 import { FinanceChart } from "@/components/FinanceChart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PiggyBank, Wallet, BanknoteIcon, DollarSign, UserCircle } from "lucide-react";
+import { PiggyBank, Wallet, BanknoteIcon, DollarSign, UserCircle, ArrowUp, ArrowDown, Landmark } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { dashboardService } from "@/services/dashboard.service";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
+import FinancialOverview from "@/components/FinancialOverview";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
   const navigate = useNavigate();
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   const { data: summaryData } = useQuery({
     queryKey: ['dashboardSummary'],
@@ -49,131 +52,192 @@ const Index = () => {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <div className="flex gap-4">
-            <Button
-              variant="outline"
-              onClick={() => navigate("/manage-earnings")}
-            >
-              <DollarSign className="mr-2 h-4 w-4" />
-              Manage Earnings
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/manage-savings")}
-            >
-              <PiggyBank className="mr-2 h-4 w-4" />
-              Manage Savings
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/manage-spending")}
-            >
-              <Wallet className="mr-2 h-4 w-4" />
-              Manage Spending
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/manage-lending")}
-            >
-              <BanknoteIcon className="mr-2 h-4 w-4" />
-              Manage Lending
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/profile")}
-            >
-              <UserCircle className="mr-2 h-4 w-4" />
-              Profile
-            </Button>
-          </div>
+          <Button onClick={() => navigate("/profile")}>
+            <UserCircle className="h-4 w-4 mr-2" />
+            Profile
+          </Button>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-4">
-          <SummaryCard
-            title="Monthly Earnings"
-            amount={`$${summaryData?.monthlyEarnings || 0}`}
-            description="+5.2% from last month"
-            className="bg-finance-earnings hover:bg-finance-earnings-dark transition-colors"
-          >
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </SummaryCard>
-          <SummaryCard
-            title="Total Savings"
-            amount={`$${summaryData?.totalSavings || 0}`}
-            description="+20.1% from last month"
-            className="bg-finance-savings hover:bg-finance-savings-dark transition-colors"
-          >
-            <PiggyBank className="h-4 w-4 text-muted-foreground" />
-          </SummaryCard>
-          <SummaryCard
-            title="Active Loans"
-            amount={`$${summaryData?.activeLoans || 0}`}
-            description="Next payment: $500 due Apr 1"
-            className="bg-finance-lending hover:bg-finance-lending-dark transition-colors"
-          >
-            <BanknoteIcon className="h-4 w-4 text-muted-foreground" />
-          </SummaryCard>
-          <SummaryCard
-            title="Monthly Spending"
-            amount={`$${summaryData?.monthlySpending || 0}`}
-            description="75% of monthly budget"
-            className="bg-finance-spending hover:bg-finance-spending-dark transition-colors"
-          >
-            <Wallet className="h-4 w-4 text-muted-foreground" />
-          </SummaryCard>
-        </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="dashboard">Main Dashboard</TabsTrigger>
+            <TabsTrigger value="financial-overview">Financial Overview</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="dashboard">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <SummaryCard 
+                title="Total Earnings"
+                value={summaryData?.totalEarnings ?? 0}
+                icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
+                description="Total earnings recorded"
+                action={
+                  <Button 
+                    variant="ghost" 
+                    className="h-8 w-8 p-0" 
+                    onClick={() => navigate("/manage-earnings")}
+                  >
+                    <BanknoteIcon className="h-4 w-4" />
+                  </Button>
+                }
+              />
+              <SummaryCard 
+                title="Total Savings"
+                value={summaryData?.totalSavings ?? 0}
+                icon={<PiggyBank className="h-4 w-4 text-muted-foreground" />}
+                description="Total savings recorded"
+                action={
+                  <Button 
+                    variant="ghost" 
+                    className="h-8 w-8 p-0" 
+                    onClick={() => navigate("/manage-savings")}
+                  >
+                    <PiggyBank className="h-4 w-4" />
+                  </Button>
+                }
+              />
+              <SummaryCard 
+                title="Total Spending"
+                value={summaryData?.totalSpendings ?? 0}
+                icon={<Wallet className="h-4 w-4 text-muted-foreground" />}
+                description="Total spending recorded"
+                action={
+                  <Button 
+                    variant="ghost" 
+                    className="h-8 w-8 p-0" 
+                    onClick={() => navigate("/manage-spending")}
+                  >
+                    <Wallet className="h-4 w-4" />
+                  </Button>
+                }
+              />
+              <SummaryCard 
+                title="Net Financial"
+                value={(summaryData?.totalLending ?? 0) - (summaryData?.totalBorrowing ?? 0)}
+                icon={<Landmark className="h-4 w-4 text-muted-foreground" />}
+                description="Net lending/borrowing position"
+                action={
+                  <div className="flex space-x-1">
+                    <Button 
+                      variant="ghost" 
+                      className="h-8 w-8 p-0" 
+                      onClick={() => navigate("/manage-lending")}
+                    >
+                      <ArrowUp className="h-4 w-4 text-green-600" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      className="h-8 w-8 p-0" 
+                      onClick={() => navigate("/manage-borrowing")}
+                    >
+                      <ArrowDown className="h-4 w-4 text-blue-600" />
+                    </Button>
+                  </div>
+                }
+              />
+            </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-          <div className="md:col-span-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Financial Flow Overview</CardTitle>
-                <div className="flex gap-4 items-center">
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="startDate">From</Label>
-                    <DatePicker
-                      id="startDate"
-                      date={startDate}
-                      onSelect={setStartDate}
-                    />
+            <div className="grid gap-4 md:grid-cols-2 mt-4">
+              <Card className="col-span-1">
+                <CardHeader>
+                  <CardTitle>Finance Overview</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex space-x-4 mb-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="from">From</Label>
+                      <DatePicker
+                        id="from"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="to">To</Label>
+                      <DatePicker
+                        id="to"
+                        selected={endDate}
+                        onSelect={setEndDate}
+                      />
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="endDate">To</Label>
-                    <DatePicker
-                      id="endDate"
-                      date={endDate}
-                      onSelect={setEndDate}
-                    />
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <FinanceChart
-                  title="Financial Overview"
-                  data={processedChartData || []}
-                  lines={[
-                    { key: "earnings", color: "#94A3B8" },
-                    { key: "savings", color: "#D1E6B8" },
-                    { key: "loans", color: "#FFB4B4" },
-                    { key: "spending", color: "#FFE4B8" }
-                  ]}
-                />
-              </CardContent>
-            </Card>
-          </div>
-          <div className="md:col-span-3">
-            <Card className="animate-fade-in">
-              <CardHeader>
-                <CardTitle className="text-sm font-medium">
-                  Recent Transactions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TransactionHistory transactions={transactions || []} />
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+                  <FinanceChart data={processedChartData} />
+                </CardContent>
+              </Card>
+              <TransactionHistory transactions={transactions || []} />
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-4 mt-4">
+              <Card className="col-span-1">
+                <CardHeader>
+                  <CardTitle>Manage Earnings</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    className="w-full" 
+                    onClick={() => navigate("/manage-earnings")}
+                  >
+                    <BanknoteIcon className="h-4 w-4 mr-2" />
+                    Go to Earnings
+                  </Button>
+                </CardContent>
+              </Card>
+              <Card className="col-span-1">
+                <CardHeader>
+                  <CardTitle>Manage Savings</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    className="w-full" 
+                    onClick={() => navigate("/manage-savings")}
+                  >
+                    <PiggyBank className="h-4 w-4 mr-2" />
+                    Go to Savings
+                  </Button>
+                </CardContent>
+              </Card>
+              <Card className="col-span-1">
+                <CardHeader>
+                  <CardTitle>Manage Spending</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    className="w-full" 
+                    onClick={() => navigate("/manage-spending")}
+                  >
+                    <Wallet className="h-4 w-4 mr-2" />
+                    Go to Spending
+                  </Button>
+                </CardContent>
+              </Card>
+              <Card className="col-span-1">
+                <CardHeader>
+                  <CardTitle>Debt Management</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Button 
+                    className="w-full" 
+                    onClick={() => navigate("/manage-lending")}
+                  >
+                    <ArrowUp className="h-4 w-4 mr-2" />
+                    Lending
+                  </Button>
+                  <Button 
+                    className="w-full" 
+                    onClick={() => navigate("/manage-borrowing")}
+                  >
+                    <ArrowDown className="h-4 w-4 mr-2" />
+                    Borrowing
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="financial-overview">
+            <FinancialOverview />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

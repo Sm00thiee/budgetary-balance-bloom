@@ -74,7 +74,33 @@ export const api = {
     } catch (error) {
       console.error(`POST request to ${url} failed:`, error);
       if (axios.isAxiosError(error)) {
-        throw new Error(error.response?.data?.message || error.message || 'API request failed');
+        const statusCode = error.response?.status;
+        const responseData = error.response?.data;
+        console.error(`Status: ${statusCode}, Response:`, responseData);
+        throw new Error(responseData?.message || error.message || 'API request failed');
+      }
+      throw error;
+    }
+  },
+
+  patch: async (url: string, data: any, params: Record<string, string> = {}) => {
+    try {
+      console.log(`API PATCH request to: ${formatUrl(url, params)}`);
+      const response = await axios.patch(formatUrl(url, params), data, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`PATCH request to ${url} failed:`, error);
+      if (axios.isAxiosError(error)) {
+        const statusCode = error.response?.status;
+        const responseData = error.response?.data;
+        console.error(`Status: ${statusCode}, Response:`, responseData);
+        throw new Error(responseData?.message || error.message || 'API request failed');
       }
       throw error;
     }
@@ -82,6 +108,7 @@ export const api = {
 
   put: async (url: string, data: any, params: Record<string, string> = {}) => {
     try {
+      console.log(`API PUT request to: ${formatUrl(url, params)}`);
       const response = await axios.put(formatUrl(url, params), data, {
         withCredentials: true,
         headers: {
@@ -93,7 +120,10 @@ export const api = {
     } catch (error) {
       console.error(`PUT request to ${url} failed:`, error);
       if (axios.isAxiosError(error)) {
-        throw new Error(error.response?.data?.message || error.message || 'API request failed');
+        const statusCode = error.response?.status;
+        const responseData = error.response?.data;
+        console.error(`Status: ${statusCode}, Response:`, responseData);
+        throw new Error(responseData?.message || error.message || 'API request failed');
       }
       throw error;
     }
@@ -101,6 +131,7 @@ export const api = {
 
   delete: async (url: string, params: Record<string, string> = {}) => {
     try {
+      console.log(`API DELETE request to: ${formatUrl(url, params)}`);
       const response = await axios.delete(formatUrl(url, params), {
         withCredentials: true,
         headers: {
@@ -111,7 +142,10 @@ export const api = {
     } catch (error) {
       console.error(`DELETE request to ${url} failed:`, error);
       if (axios.isAxiosError(error)) {
-        throw new Error(error.response?.data?.message || error.message || 'API request failed');
+        const statusCode = error.response?.status;
+        const responseData = error.response?.data;
+        console.error(`Status: ${statusCode}, Response:`, responseData);
+        throw new Error(responseData?.message || error.message || 'API request failed');
       }
       throw error;
     }
