@@ -22,10 +22,11 @@ export const API_CONFIG = {
       updateStatus: '/api/lending/:id/status',
     },
     spending: {
-      list: '/api/spendings',
-      create: '/api/spendings',
-      update: '/api/spendings/:id',
-      delete: '/api/spendings/:id',
+      list: '/api/spendings/getRecords',
+      create: '/api/spendings/create',
+      update: '/api/spendings/update',
+      delete: '/api/spendings/delete',
+      categories: '/api/spendings/categories',
     },
     dashboard: {
       summary: '/api/dashboard/summary',
