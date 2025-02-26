@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,10 +15,12 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Save, Upload, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { api } from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
 
 const UserProfile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { logout } = useAuth();
   const [userInfo, setUserInfo] = useState({
     firstName: "John",
     lastName: "Doe",
@@ -97,8 +98,7 @@ const UserProfile = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
-    navigate("/login");
+    logout("You have been logged out successfully");
   };
 
   return (

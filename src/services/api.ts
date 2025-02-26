@@ -35,6 +35,13 @@ export const api = {
 
   post: async (url: string, data: any, params: Record<string, string> = {}) => {
     try {
+      const isAuthEndpoint = url.includes('authenticate') || url.includes('register');
+      
+      // Log the request for debugging
+      if (isAuthEndpoint) {
+        console.log(`Auth API POST request to: ${formatUrl(url, params)}`);
+      }
+      
       const response = await axios.post(formatUrl(url, params), data, {
         withCredentials: true,
         headers: {
@@ -42,6 +49,27 @@ export const api = {
           'Accept': 'application/json',
         },
       });
+      
+      // For auth endpoints, log the response and cookies
+      if (isAuthEndpoint) {
+        console.log('Auth response received:', {
+          status: response.status,
+          hasBody: !!response.data && Object.keys(response.data).length > 0,
+          cookies: document.cookie ? 'Cookies present' : 'No cookies'
+        });
+        
+        // Check if we have cookies after auth request
+        const hasCookies = document.cookie.includes('jwt.mytoken');
+        console.log('JWT cookie found:', hasCookies);
+        
+        // For authentication endpoints with empty responses but with cookie set,
+        // return an empty object to prevent errors
+        if (Object.keys(response.data).length === 0 && hasCookies) {
+          console.log('Empty response with cookie - creating default response object');
+          return { success: true };
+        }
+      }
+      
       return response.data;
     } catch (error) {
       console.error(`POST request to ${url} failed:`, error);

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,10 +15,13 @@ import { useToast } from "@/hooks/use-toast";
 import { LogIn } from "lucide-react";
 import { API_CONFIG } from "@/config/api.config";
 import { api } from "@/services/api";
+import { setUserLoggedIn } from '@/services/auth-cookie';
+import { useAuth } from "@/context/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -39,20 +41,44 @@ const Login = () => {
 
     setIsLoading(true);
     try {
-      const response = await api.post(API_CONFIG.endpoints.auth.login, {
+      await api.post(API_CONFIG.endpoints.auth.login, {
         Username: formData.username,
         Password: formData.password,
       });
       
-      localStorage.setItem("isAuthenticated", "true");
-      localStorage.setItem("user", JSON.stringify(response.user));
+      console.log('Login successful - JWT cookie should be set');
+      
+      const hasCookie = document.cookie.includes('jwt.mytoken');
+      console.log('Cookies present:', document.cookie ? 'Yes' : 'No');
+      console.log('JWT cookie found:', hasCookie);
+      
+      if (!hasCookie) {
+        console.warn('Warning: JWT cookie not detected after login');
+      }
+      
+      // Set the user logged in state for our auth check
+      setUserLoggedIn(true);
+      
+      // Since we don't get user data from the response, create a minimal user object
+      const userData = {
+        username: formData.username,
+        // Add any other default fields needed
+      };
+      
+      // Call login with cookie-auth method and basic user data
+      login('cookie-auth', userData);
       
       toast({
         title: "Success",
         description: "Successfully logged in",
       });
-      navigate("/");
+      
+      // Small delay to ensure everything is set before navigating
+      setTimeout(() => {
+        navigate("/");
+      }, 100);
     } catch (error) {
+      console.error('Login error:', error);
       toast({
         title: "Error",
         description: "Invalid credentials",

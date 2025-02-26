@@ -37,6 +37,7 @@ export const API_CONFIG = {
       login: '/api/sessions/authenticate',
       register: '/api/user/register',
       profile: '/api/auth/profile',
+      logout: '/api/sessions/logout',
     }
   },
   dtos: {
