@@ -8,8 +8,8 @@ export interface GetPageRequestDto {
   sortDirection?: string;
 }
 
-export interface GetLendingRequestDto extends GetPageRequestDto {
-  borrowName?: string;
+export interface GetBorrowingRequestDto extends GetPageRequestDto {
+  lenderName?: string;
   fromDate?: Date;
   toDate?: Date;
   minAmount?: number;
@@ -18,9 +18,9 @@ export interface GetLendingRequestDto extends GetPageRequestDto {
   status?: number;
 }
 
-export interface Lending {
+export interface Borrowing {
   id: string;
-  borrowName: string;
+  lenderName: string;
   amount: number;
   interestRate: number;
   dueDate: string;
@@ -28,18 +28,18 @@ export interface Lending {
   date: string;
   status: number;
   remainingAmount?: number;
-  payments?: LendingPayment[];
+  payments?: BorrowingPayment[];
 }
 
-export interface LendingPayment {
+export interface BorrowingPayment {
   id: string;
-  lendingId: string;
+  borrowingId: string;
   amount: number;
   date: string;
   note?: string;
 }
 
-export interface LendingSummary {
+export interface BorrowingSummary {
   totalActiveAmount: number;
   totalOverdueAmount: number;
   totalCompletedAmount: number;
@@ -50,24 +50,24 @@ export interface LendingSummary {
   countByStatus: Record<string, number>;
 }
 
-export const lendingService = {
-  getAll: (params?: GetLendingRequestDto) =>
-    api.post(API_CONFIG.endpoints.lending.find, params),
+export const borrowingService = {
+  getAll: (params?: GetBorrowingRequestDto) =>
+    api.post(API_CONFIG.endpoints.borrowing.find, params),
 
   create: (data: {
-    borrowName: string;
+    lenderName: string;
     description: string;
     amount: number;
     date: string;
     dueDate: string;
     interestRate: number;
     status?: number;
-  }) => api.post(API_CONFIG.endpoints.lending.create, data),
+  }) => api.post(API_CONFIG.endpoints.borrowing.create, data),
 
   update: (
     id: string,
     data: {
-      borrowName?: string;
+      lenderName?: string;
       description?: string;
       amount?: number;
       date?: string;
@@ -75,26 +75,26 @@ export const lendingService = {
       interestRate?: number;
       status?: number;
     }
-  ) => api.put(API_CONFIG.endpoints.lending.update.replace(":id", id), data),
+  ) => api.put(API_CONFIG.endpoints.borrowing.update.replace(":id", id), data),
 
   getById: (id: string) =>
-    api.get(API_CONFIG.endpoints.lending.getById.replace(":id", id)),
+    api.get(API_CONFIG.endpoints.borrowing.getById.replace(":id", id)),
 
   updateStatus: (id: string, status: number) =>
-    api.put(API_CONFIG.endpoints.lending.updateStatus.replace(":id", id), {
+    api.put(API_CONFIG.endpoints.borrowing.updateStatus.replace(":id", id), {
       status,
     }),
 
   delete: (id: string) =>
-    api.delete(API_CONFIG.endpoints.lending.delete.replace(":id", id)),
+    api.delete(API_CONFIG.endpoints.borrowing.delete.replace(":id", id)),
 
   recordPayment: (id: string, data: { amount: number; note?: string }) =>
     api.post(
-      API_CONFIG.endpoints.lending.recordPayment.replace(":id", id),
+      API_CONFIG.endpoints.borrowing.recordPayment.replace(":id", id),
       data
     ),
 
-  getSummary: () => api.get(API_CONFIG.endpoints.lending.summary),
+  getSummary: () => api.get(API_CONFIG.endpoints.borrowing.summary),
 
-  getOverdue: () => api.get(API_CONFIG.endpoints.lending.overdue),
+  getOverdue: () => api.get(API_CONFIG.endpoints.borrowing.overdue),
 };

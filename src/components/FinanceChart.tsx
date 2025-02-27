@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Line,
@@ -15,13 +14,41 @@ interface ChartLine {
   color: string;
 }
 
+interface ChartDataPoint {
+  name: string;
+  earnings: number;
+  savings: number;
+  loans: number;
+  spending: number;
+  yearMonth: string;
+  [key: string]: string | number; // For any additional properties
+}
+
 interface FinanceChartProps {
   title: string;
-  data: Record<string, any>[];
+  data: ChartDataPoint[];
   lines: ChartLine[];
 }
 
 export const FinanceChart = ({ title, data, lines }: FinanceChartProps) => {
+  console.log('FinanceChart received data:', data);
+  console.log('FinanceChart received lines:', lines);
+
+  if (!data || data.length === 0) {
+    return (
+      <Card className="animate-fade-in">
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+            No data available for chart visualization
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="animate-fade-in">
       <CardHeader>
@@ -53,7 +80,7 @@ export const FinanceChart = ({ title, data, lines }: FinanceChartProps) => {
                 axisLine={false}
                 tickFormatter={(value) => `$${value}`}
               />
-              <Tooltip />
+              <Tooltip formatter={(value: number) => [`$${value}`, '']} />
               <Legend />
               {lines.map((line) => (
                 <Line

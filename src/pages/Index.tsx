@@ -34,15 +34,24 @@ const Index = () => {
     }),
   });
 
-  // First, sort and process the data for the chart
   const processedChartData = useMemo(() => {
-    if (!chartData) return [];
+    if (!chartData || chartData.length === 0) return [];
     
-    // Sort data chronologically
-    return [...chartData].sort((a, b) => 
+    const sorted = [...chartData].sort((a, b) => 
       new Date(a.yearMonth).getTime() - new Date(b.yearMonth).getTime()
     );
+    
+    return sorted.map(item => ({
+      name: item.name || '',
+      earnings: Number(item.earnings) || 0,
+      savings: Number(item.savings) || 0,
+      loans: Number(item.loans) || 0,
+      spending: Number(item.spending) || 0,
+      yearMonth: item.yearMonth
+    }));
   }, [chartData]);
+
+  console.log('Processed Chart Data:', processedChartData);
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -148,16 +157,22 @@ const Index = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <FinanceChart
-                  title="Financial Overview"
-                  data={processedChartData || []}
-                  lines={[
-                    { key: "earnings", color: "#94A3B8" },
-                    { key: "savings", color: "#D1E6B8" },
-                    { key: "loans", color: "#FFB4B4" },
-                    { key: "spending", color: "#FFE4B8" }
-                  ]}
-                />
+                {processedChartData && processedChartData.length > 0 ? (
+                  <FinanceChart
+                    title="Financial Overview"
+                    data={processedChartData}
+                    lines={[
+                      { key: "earnings", color: "#94A3B8" },
+                      { key: "savings", color: "#D1E6B8" },
+                      { key: "loans", color: "#FFB4B4" },
+                      { key: "spending", color: "#FFE4B8" }
+                    ]}
+                  />
+                ) : (
+                  <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+                    No data available for the selected period
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

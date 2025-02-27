@@ -23,10 +23,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Pencil, Trash2, ArrowLeft, DollarSign, Info, Calendar, Filter } from "lucide-react";
+import { Pencil, Trash2, ArrowLeft, DollarSign, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { lendingService, Lending, LendingSummary } from "@/services/lending.service";
+import { borrowingService, Borrowing, BorrowingSummary } from "@/services/borrowing.service";
 import {
   Pagination,
   PaginationContent,
@@ -43,14 +43,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 
 // Status codes
-enum LendingStatus {
+enum BorrowingStatus {
   Active = 1,
   Completed = 2,
   Defaulted = 3
@@ -59,11 +58,11 @@ enum LendingStatus {
 // Helper function to convert status number to string
 const getStatusText = (status: number): string => {
   switch (status) {
-    case LendingStatus.Active:
+    case BorrowingStatus.Active:
       return "Active";
-    case LendingStatus.Completed:
+    case BorrowingStatus.Completed:
       return "Completed";
-    case LendingStatus.Defaulted:
+    case BorrowingStatus.Defaulted:
       return "Defaulted";
     default:
       return "Unknown";
@@ -73,27 +72,27 @@ const getStatusText = (status: number): string => {
 // Helper function to get badge variant based on status
 const getStatusBadgeVariant = (status: number): "default" | "secondary" | "destructive" => {
   switch (status) {
-    case LendingStatus.Active:
+    case BorrowingStatus.Active:
       return "default";
-    case LendingStatus.Completed:
+    case BorrowingStatus.Completed:
       return "secondary";
-    case LendingStatus.Defaulted:
+    case BorrowingStatus.Defaulted:
       return "destructive";
     default:
       return "default";
   }
 };
 
-const ManageLending = () => {
+const ManageBorrowing = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  // State for lending data
-  const [entries, setEntries] = useState<Lending[]>([]);
+  // State for borrowing data
+  const [entries, setEntries] = useState<Borrowing[]>([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [currentEntry, setCurrentEntry] = useState<Partial<Lending>>({});
+  const [currentEntry, setCurrentEntry] = useState<Partial<Borrowing>>({});
   const [totalItems, setTotalItems] = useState(0);
-  const [summary, setSummary] = useState<LendingSummary | null>(null);
+  const [summary, setSummary] = useState<BorrowingSummary | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState<number | "">("");
   const [paymentNote, setPaymentNote] = useState("");
@@ -110,12 +109,12 @@ const ManageLending = () => {
   const [maxAmount, setMaxAmount] = useState<number | "">("");
   const [showFilters, setShowFilters] = useState(false);
 
-  const fetchLendings = async () => {
+  const fetchBorrowings = async () => {
     try {
-      const response = await lendingService.getAll({
+      const response = await borrowingService.getAll({
         pageNumber: currentPage,
         itemsPerPage: itemsPerPage,
-        borrowName: searchTerm || undefined,
+        lenderName: searchTerm || undefined,
         status: statusFilter !== "" ? Number(statusFilter) : undefined,
         fromDate: fromDate ? new Date(fromDate) : undefined,
         toDate: toDate ? new Date(toDate) : undefined,
@@ -130,7 +129,7 @@ const ManageLending = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to fetch lending data",
+        description: "Failed to fetch borrowing data",
         variant: "destructive",
       });
     }
@@ -138,25 +137,25 @@ const ManageLending = () => {
 
   const fetchSummary = async () => {
     try {
-      const summaryData = await lendingService.getSummary();
+      const summaryData = await borrowingService.getSummary();
       setSummary(summaryData);
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to fetch lending summary",
+        description: "Failed to fetch borrowing summary",
         variant: "destructive",
       });
     }
   };
 
   useEffect(() => {
-    fetchLendings();
+    fetchBorrowings();
     fetchSummary();
   }, [currentPage, searchTerm, statusFilter, fromDate, toDate, minAmount, maxAmount]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentEntry.borrowName || !currentEntry.description || !currentEntry.amount || !currentEntry.dueDate || currentEntry.interestRate === undefined) {
+    if (!currentEntry.lenderName || !currentEntry.description || !currentEntry.amount || !currentEntry.dueDate || currentEntry.interestRate === undefined) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -167,18 +166,18 @@ const ManageLending = () => {
 
     try {
       if (isEditing && currentEntry.id) {
-        await lendingService.update(currentEntry.id, currentEntry as Lending);
+        await borrowingService.update(currentEntry.id, currentEntry as Borrowing);
         toast({
           title: "Success",
           description: "Loan entry updated successfully",
         });
       } else {
-        const newLending = {
-          ...currentEntry as Lending,
+        const newBorrowing = {
+          ...currentEntry as Borrowing,
           date: new Date().toISOString().split('T')[0],
-          status: LendingStatus.Active,
+          status: BorrowingStatus.Active,
         };
-        await lendingService.create(newLending);
+        await borrowingService.create(newBorrowing);
         toast({
           title: "Success",
           description: "Loan entry added successfully",
@@ -186,7 +185,7 @@ const ManageLending = () => {
       }
       
       // Refresh data
-      fetchLendings();
+      fetchBorrowings();
       fetchSummary();
       
       // Reset form
@@ -195,21 +194,21 @@ const ManageLending = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to save lending entry",
+        description: "Failed to save borrowing entry",
         variant: "destructive",
       });
     }
   };
 
-  const handleEdit = (entry: Lending) => {
+  const handleEdit = (entry: Borrowing) => {
     setCurrentEntry(entry);
     setIsEditing(true);
   };
 
   const handleDelete = async (id: string) => {
     try {
-      await lendingService.delete(id);
-      fetchLendings();
+      await borrowingService.delete(id);
+      fetchBorrowings();
       fetchSummary();
       toast({
         title: "Success",
@@ -218,7 +217,7 @@ const ManageLending = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to delete lending entry",
+        description: "Failed to delete borrowing entry",
         variant: "destructive",
       });
     }
@@ -226,8 +225,8 @@ const ManageLending = () => {
 
   const handleStatusChange = async (id: string, status: number) => {
     try {
-      await lendingService.updateStatus(id, status);
-      fetchLendings();
+      await borrowingService.updateStatus(id, status);
+      fetchBorrowings();
       fetchSummary();
       toast({
         title: "Success",
@@ -260,13 +259,13 @@ const ManageLending = () => {
     }
 
     try {
-      await lendingService.recordPayment(currentPaymentId, {
+      await borrowingService.recordPayment(currentPaymentId, {
         amount: Number(paymentAmount),
         note: paymentNote || undefined
       });
       
       setShowPaymentDialog(false);
-      fetchLendings();
+      fetchBorrowings();
       fetchSummary();
       
       toast({
@@ -311,7 +310,7 @@ const ManageLending = () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Button>
-            <h1 className="text-3xl font-bold tracking-tight">Manage Lending</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Manage Borrowings</h1>
           </div>
         </div>
 
@@ -321,23 +320,23 @@ const ManageLending = () => {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Active Loans
+                  Active Borrowings
                 </CardTitle>
                 <CardDescription>
-                  Money you've lent that's still being repaid
+                  Money you've borrowed that still needs to be repaid
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">${summary.totalActiveAmount.toFixed(2)}</div>
                 <p className="text-xs text-muted-foreground">
-                  {summary.activeCount} active loans
+                  {summary.activeCount} active borrowings
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Overdue Loans
+                  Overdue Borrowings
                 </CardTitle>
                 <CardDescription>
                   Money that's past the due date
@@ -346,14 +345,14 @@ const ManageLending = () => {
               <CardContent>
                 <div className="text-2xl font-bold">${summary.totalOverdueAmount.toFixed(2)}</div>
                 <p className="text-xs text-muted-foreground">
-                  {summary.overdueCount} overdue loans
+                  {summary.overdueCount} overdue borrowings
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Completed Loans
+                  Completed Borrowings
                 </CardTitle>
                 <CardDescription>
                   Money that has been fully repaid
@@ -362,7 +361,7 @@ const ManageLending = () => {
               <CardContent>
                 <div className="text-2xl font-bold">${summary.totalCompletedAmount.toFixed(2)}</div>
                 <p className="text-xs text-muted-foreground">
-                  {summary.completedCount} completed loans
+                  {summary.completedCount} completed borrowings
                 </p>
               </CardContent>
             </Card>
@@ -372,18 +371,18 @@ const ManageLending = () => {
         {/* New/Edit Loan Form */}
         <Card>
           <CardHeader>
-            <CardTitle>{isEditing ? "Edit Loan Entry" : "Add New Loan Entry"}</CardTitle>
+            <CardTitle>{isEditing ? "Edit Borrowing" : "Add New Borrowing"}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="borrowName">Borrower Name</Label>
+                  <Label htmlFor="lenderName">Lender Name</Label>
                   <Input
-                    id="borrowName"
-                    placeholder="Who borrowed the money"
-                    value={currentEntry.borrowName || ''}
-                    onChange={(e) => setCurrentEntry({ ...currentEntry, borrowName: e.target.value })}
+                    id="lenderName"
+                    placeholder="Who lent you the money"
+                    value={currentEntry.lenderName || ''}
+                    onChange={(e) => setCurrentEntry({ ...currentEntry, lenderName: e.target.value })}
                   />
                 </div>
                 
@@ -447,7 +446,7 @@ const ManageLending = () => {
                   </Button>
                 )}
                 <Button type="submit">
-                  {isEditing ? "Update Loan" : "Add Loan"}
+                  {isEditing ? "Update Borrowing" : "Add Borrowing"}
                 </Button>
               </div>
             </form>
@@ -457,11 +456,11 @@ const ManageLending = () => {
         {/* Loans Table */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Loan Records</CardTitle>
+            <CardTitle>Borrowing Records</CardTitle>
             <div className="flex space-x-2">
               <div className="relative w-full md:w-64">
                 <Input
-                  placeholder="Search by borrower name..."
+                  placeholder="Search by lender name..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pr-8"
@@ -555,7 +554,7 @@ const ManageLending = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
-                  <TableHead>Borrower</TableHead>
+                  <TableHead>Lender</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Interest</TableHead>
@@ -568,14 +567,14 @@ const ManageLending = () => {
                 {entries.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-4 text-muted-foreground">
-                      No lending records found
+                      No borrowing records found
                     </TableCell>
                   </TableRow>
                 ) : (
                   entries.map((entry) => (
                     <TableRow key={entry.id}>
                       <TableCell>{format(new Date(entry.date), "MMM d, yyyy")}</TableCell>
-                      <TableCell>{entry.borrowName}</TableCell>
+                      <TableCell>{entry.lenderName}</TableCell>
                       <TableCell>{entry.description}</TableCell>
                       <TableCell>${entry.amount.toFixed(2)}</TableCell>
                       <TableCell>{entry.interestRate.toFixed(1)}%</TableCell>
@@ -587,7 +586,7 @@ const ManageLending = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
-                          {entry.status === LendingStatus.Active && (
+                          {entry.status === BorrowingStatus.Active && (
                             <Button
                               variant="outline"
                               size="icon"
@@ -711,4 +710,4 @@ const ManageLending = () => {
   );
 };
 
-export default ManageLending;
+export default ManageBorrowing; 

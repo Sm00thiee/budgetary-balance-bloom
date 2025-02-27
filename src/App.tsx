@@ -13,6 +13,7 @@ import ManageEarnings from "./pages/ManageEarnings";
 import ManageSavings from "./pages/ManageSavings";
 import ManageSpending from "./pages/ManageSpending";
 import ManageLending from "./pages/ManageLending";
+import ManageBorrowing from "./pages/ManageBorrowing";
 import NotFound from "./pages/NotFound";
 import AxiosInterceptorSetup from "./services/axios-interceptor-setup";
 
@@ -57,6 +58,11 @@ const App = () => (
             <Route path="/manage-lending" element={
               <ProtectedRoute>
                 <ManageLending />
+              </ProtectedRoute>
+            } />
+            <Route path="/manage-borrowing" element={
+              <ProtectedRoute>
+                <ManageBorrowing />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
