@@ -1,10 +1,40 @@
-import { api } from "./api";
+import { apiService } from "./api";
 import { API_CONFIG } from "@/config/api.config";
 
-export const dashboardService = {
-  getSummary: () => api.get(API_CONFIG.endpoints.dashboard.summary),
+export interface DashboardSummary {
+  monthlyEarnings: number;
+  totalSavings: number;
+  activeLoans: number;
+  activeBorrowings: number;
+  monthlySpending: number;
+  borrowingCount: number;
+  lendingCount: number;
+}
 
-  getTransactions: () => api.get(API_CONFIG.endpoints.dashboard.transactions),
+export interface Transaction {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  type: string;
+  category?: string;
+}
+
+export interface ChartData {
+  yearMonth: string;
+  name: string;
+  earnings: number;
+  savings: number;
+  loans: number;
+  borrowings: number;
+  spending: number;
+  year: number;
+}
+
+export const dashboardService = {
+  getSummary: () => apiService.get<DashboardSummary>(API_CONFIG.endpoints.dashboard.summary),
+
+  getTransactions: () => apiService.get<Transaction[]>(API_CONFIG.endpoints.dashboard.transactions),
 
   getChartData: (params?: {
     startDate?: Date;
@@ -31,17 +61,7 @@ export const dashboardService = {
       url += `?${queryParams.join("&")}`;
     }
 
-    return api.get(url).then((response) => {
-      return response.data.map((item: MonthlyFinancialChart) => ({
-        name: item.Month,
-        earnings: item.Earnings,
-        savings: item.Savings,
-        loans: item.Loans,
-        spending: item.Spending,
-        yearMonth: item.YearMonth,
-        year: item.Year,
-      }));
-    });
+    return apiService.get<ChartData[]>(url);
   },
 };
 

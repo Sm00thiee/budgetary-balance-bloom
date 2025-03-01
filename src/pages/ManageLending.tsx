@@ -26,7 +26,13 @@ import {
 import { Pencil, Trash2, ArrowLeft, DollarSign, Info, Calendar, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { lendingService, Lending, LendingSummary } from "@/services/lending.service";
+import { 
+  lendingService, 
+  Lending, 
+  LendingSummary,
+  CreateLendingRequestDto,
+  UpdateLendingRequestDto 
+} from "@/services/lending.service";
 import {
   Pagination,
   PaginationContent,
@@ -47,7 +53,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 
 // Status codes
 enum LendingStatus {
@@ -56,9 +62,26 @@ enum LendingStatus {
   Defaulted = 3
 }
 
+// Helper function to check if a value is a valid LendingStatus
+const isValidLendingStatus = (status: any): boolean => {
+  const statusNum = Number(status);
+  return !isNaN(statusNum) && 
+         statusNum >= 1 && 
+         statusNum <= Object.keys(LendingStatus).length / 2;
+};
+
 // Helper function to convert status number to string
-const getStatusText = (status: number): string => {
-  switch (status) {
+const getStatusText = (status: number | null | undefined): string => {
+  // Handle null/undefined status
+  if (status === null || status === undefined) {
+    return "Unknown";
+  }
+  
+  // Ensure status is a number
+  const statusNum = Number(status);
+  
+  // Check if status is in valid range
+  switch (statusNum) {
     case LendingStatus.Active:
       return "Active";
     case LendingStatus.Completed:
@@ -66,13 +89,22 @@ const getStatusText = (status: number): string => {
     case LendingStatus.Defaulted:
       return "Defaulted";
     default:
+      console.warn(`Invalid status value received: ${status}`);
       return "Unknown";
   }
 };
 
 // Helper function to get badge variant based on status
-const getStatusBadgeVariant = (status: number): "default" | "secondary" | "destructive" => {
-  switch (status) {
+const getStatusBadgeVariant = (status: number | null | undefined): "default" | "secondary" | "destructive" => {
+  // Handle null/undefined status
+  if (status === null || status === undefined) {
+    return "default";
+  }
+  
+  // Ensure status is a number
+  const statusNum = Number(status);
+  
+  switch (statusNum) {
     case LendingStatus.Active:
       return "default";
     case LendingStatus.Completed:
@@ -82,6 +114,21 @@ const getStatusBadgeVariant = (status: number): "default" | "secondary" | "destr
     default:
       return "default";
   }
+};
+
+// Helper function to safely parse dates
+const parseSafeDate = (dateString: string | undefined): Date | undefined => {
+  if (!dateString) return undefined;
+  const date = new Date(dateString);
+  return isNaN(date.getTime()) ? undefined : date;
+};
+
+// Helper function to safely format dates
+const safeFormatDate = (dateString: string, formatPattern: string = "MMM d, yyyy"): string => {
+  if (!dateString) return "N/A";
+  
+  const date = parseISO(dateString);
+  return isValid(date) ? format(date, formatPattern) : "Invalid date";
 };
 
 const ManageLending = () => {
@@ -117,17 +164,29 @@ const ManageLending = () => {
         itemsPerPage: itemsPerPage,
         borrowName: searchTerm || undefined,
         status: statusFilter !== "" ? Number(statusFilter) : undefined,
-        fromDate: fromDate ? new Date(fromDate) : undefined,
-        toDate: toDate ? new Date(toDate) : undefined,
+        fromDate: parseSafeDate(fromDate),
+        toDate: parseSafeDate(toDate),
         minAmount: minAmount !== "" ? Number(minAmount) : undefined,
         maxAmount: maxAmount !== "" ? Number(maxAmount) : undefined,
         sortField: "dueDate",
         sortDirection: "asc"
       });
       
-      setEntries(response.items || []);
+      console.log("API Response:", response);
+      
+      // Process the entries to ensure status is correctly handled
+      const processedItems = response.items?.map(item => ({
+        ...item,
+        // Convert status to a number and ensure it's a valid enum value
+        status: isValidLendingStatus(item.status) ? Number(item.status) : LendingStatus.Active
+      })) || [];
+      
+      console.log("Processed items:", processedItems);
+      
+      setEntries(processedItems);
       setTotalItems(response.total || 0);
     } catch (error) {
+      console.error("Fetch lendings error:", error);
       toast({
         title: "Error",
         description: "Failed to fetch lending data",
@@ -165,18 +224,38 @@ const ManageLending = () => {
       return;
     }
 
+    // Validate the due date
+    const dueDate = parseSafeDate(currentEntry.dueDate);
+    if (!dueDate) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid due date",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       if (isEditing && currentEntry.id) {
-        await lendingService.update(currentEntry.id, currentEntry as Lending);
+        const updateData: UpdateLendingRequestDto = {
+          borrowName: currentEntry.borrowName,
+          description: currentEntry.description,
+          amount: currentEntry.amount,
+          interestRate: currentEntry.interestRate,
+          dueDate: dueDate.toISOString().split('T')[0]
+        };
+        await lendingService.update(currentEntry.id, updateData);
         toast({
           title: "Success",
           description: "Loan entry updated successfully",
         });
       } else {
-        const newLending = {
-          ...currentEntry as Lending,
-          date: new Date().toISOString().split('T')[0],
-          status: LendingStatus.Active,
+        const newLending: CreateLendingRequestDto = {
+          borrowName: currentEntry.borrowName,
+          description: currentEntry.description,
+          amount: currentEntry.amount,
+          interestRate: currentEntry.interestRate,
+          dueDate: dueDate.toISOString().split('T')[0]
         };
         await lendingService.create(newLending);
         toast({
@@ -226,7 +305,7 @@ const ManageLending = () => {
 
   const handleStatusChange = async (id: string, status: number) => {
     try {
-      await lendingService.updateStatus(id, status);
+      await lendingService.updateStatus(id, { status });
       fetchLendings();
       fetchSummary();
       toast({
@@ -260,7 +339,7 @@ const ManageLending = () => {
     }
 
     try {
-      await lendingService.recordPayment(currentPaymentId, {
+      const remainingAmount = await lendingService.recordPayment(currentPaymentId, {
         amount: Number(paymentAmount),
         note: paymentNote || undefined
       });
@@ -271,7 +350,7 @@ const ManageLending = () => {
       
       toast({
         title: "Success",
-        description: "Payment recorded successfully",
+        description: `Payment recorded successfully. Remaining amount: $${remainingAmount.toFixed(2)}`,
       });
     } catch (error) {
       toast({
@@ -328,9 +407,11 @@ const ManageLending = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${summary.totalActiveAmount.toFixed(2)}</div>
+                <div className="text-2xl font-bold">
+                  ${(summary?.totalActiveAmount ?? 0).toFixed(2)}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {summary.activeCount} active loans
+                  {summary?.activeCount ?? 0} active loans
                 </p>
               </CardContent>
             </Card>
@@ -344,9 +425,11 @@ const ManageLending = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${summary.totalOverdueAmount.toFixed(2)}</div>
+                <div className="text-2xl font-bold">
+                  ${(summary?.totalOverdueAmount ?? 0).toFixed(2)}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {summary.overdueCount} overdue loans
+                  {summary?.overdueCount ?? 0} overdue loans
                 </p>
               </CardContent>
             </Card>
@@ -360,9 +443,11 @@ const ManageLending = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${summary.totalCompletedAmount.toFixed(2)}</div>
+                <div className="text-2xl font-bold">
+                  ${(summary?.totalCompletedAmount ?? 0).toFixed(2)}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {summary.completedCount} completed loans
+                  {summary?.completedCount ?? 0} completed loans
                 </p>
               </CardContent>
             </Card>
@@ -561,6 +646,7 @@ const ManageLending = () => {
                   <TableHead>Interest</TableHead>
                   <TableHead>Due Date</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Repaid</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -574,16 +660,41 @@ const ManageLending = () => {
                 ) : (
                   entries.map((entry) => (
                     <TableRow key={entry.id}>
-                      <TableCell>{format(new Date(entry.date), "MMM d, yyyy")}</TableCell>
+                      <TableCell>
+                        {safeFormatDate(entry.date)}
+                      </TableCell>
                       <TableCell>{entry.borrowName}</TableCell>
                       <TableCell>{entry.description}</TableCell>
                       <TableCell>${entry.amount.toFixed(2)}</TableCell>
                       <TableCell>{entry.interestRate.toFixed(1)}%</TableCell>
-                      <TableCell>{format(new Date(entry.dueDate), "MMM d, yyyy")}</TableCell>
                       <TableCell>
-                        <Badge variant={getStatusBadgeVariant(entry.status)}>
-                          {getStatusText(entry.status)}
+                        {safeFormatDate(entry.dueDate)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={getStatusBadgeVariant(entry.status)}
+                          className={entry.isOverdue ? "bg-red-500" : ""}
+                        >
+                          {isValidLendingStatus(entry.status) 
+                            ? getStatusText(entry.status) 
+                            : `Unknown (${entry.status})`}
+                          {entry.isOverdue && " (Overdue)"}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-2">
+                          <div className="text-sm">
+                            Repaid: ${entry.amountRepaid.toFixed(2)}
+                          </div>
+                          <div className="text-sm">
+                            Remaining: ${entry.remainingAmount.toFixed(2)}
+                          </div>
+                          {entry.lastRepaymentDate && (
+                            <div className="text-xs text-muted-foreground">
+                              Last payment: {safeFormatDate(entry.lastRepaymentDate)}
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">

@@ -1,19 +1,13 @@
-
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { format } from "date-fns";
 
 interface Transaction {
   id: string;
   date: string;
   description: string;
   amount: number;
-  category: string;
+  type: string;
+  category?: string;
 }
 
 interface TransactionHistoryProps {
@@ -22,29 +16,38 @@ interface TransactionHistoryProps {
 
 export const TransactionHistory = ({ transactions }: TransactionHistoryProps) => {
   return (
-    <div className="rounded-md border animate-slide-up">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {transactions.map((transaction) => (
-            <TableRow key={transaction.id}>
-              <TableCell>{transaction.date}</TableCell>
-              <TableCell>{transaction.description}</TableCell>
-              <TableCell>{transaction.category}</TableCell>
-              <TableCell className="text-right">
-                ${transaction.amount.toFixed(2)}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <ScrollArea className="h-[300px]">
+      <div className="space-y-4">
+        {transactions.length === 0 ? (
+          <div className="text-center text-muted-foreground py-4">
+            No recent transactions
+          </div>
+        ) : (
+          transactions.map((transaction) => (
+            <div
+              key={transaction.id}
+              className="flex items-center justify-between p-2 rounded-lg hover:bg-accent"
+            >
+              <div className="space-y-1">
+                <p className="text-sm font-medium leading-none">
+                  {transaction.description}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {format(new Date(transaction.date), "MMM d, yyyy")}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-sm font-medium">
+                  ${transaction.amount.toFixed(2)}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {transaction.type}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </ScrollArea>
   );
 };

@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { apiService } from "./api";
 import { API_CONFIG } from "@/config/api.config";
 
 export interface GetPageRequestDto {
@@ -52,7 +52,7 @@ export interface BorrowingSummary {
 
 export const borrowingService = {
   getAll: (params?: GetBorrowingRequestDto) =>
-    api.post(API_CONFIG.endpoints.borrowing.find, params),
+    apiService.post<{ items: Borrowing[]; total: number }>(API_CONFIG.endpoints.borrowing.find, params),
 
   create: (data: {
     lenderName: string;
@@ -62,7 +62,7 @@ export const borrowingService = {
     dueDate: string;
     interestRate: number;
     status?: number;
-  }) => api.post(API_CONFIG.endpoints.borrowing.create, data),
+  }) => apiService.post<string>(API_CONFIG.endpoints.borrowing.create, data),
 
   update: (
     id: string,
@@ -75,26 +75,26 @@ export const borrowingService = {
       interestRate?: number;
       status?: number;
     }
-  ) => api.put(API_CONFIG.endpoints.borrowing.update.replace(":id", id), data),
+  ) => apiService.put<void>(API_CONFIG.endpoints.borrowing.update.replace(":id", id), data),
 
   getById: (id: string) =>
-    api.get(API_CONFIG.endpoints.borrowing.getById.replace(":id", id)),
+    apiService.get<Borrowing>(API_CONFIG.endpoints.borrowing.getById.replace(":id", id)),
 
   updateStatus: (id: string, status: number) =>
-    api.put(API_CONFIG.endpoints.borrowing.updateStatus.replace(":id", id), {
+    apiService.put<void>(API_CONFIG.endpoints.borrowing.updateStatus.replace(":id", id), {
       status,
     }),
 
   delete: (id: string) =>
-    api.delete(API_CONFIG.endpoints.borrowing.delete.replace(":id", id)),
+    apiService.delete<void>(API_CONFIG.endpoints.borrowing.delete.replace(":id", id)),
 
   recordPayment: (id: string, data: { amount: number; note?: string }) =>
-    api.post(
+    apiService.post<void>(
       API_CONFIG.endpoints.borrowing.recordPayment.replace(":id", id),
       data
     ),
 
-  getSummary: () => api.get(API_CONFIG.endpoints.borrowing.summary),
+  getSummary: () => apiService.get<BorrowingSummary>(API_CONFIG.endpoints.borrowing.summary),
 
-  getOverdue: () => api.get(API_CONFIG.endpoints.borrowing.overdue),
+  getOverdue: () => apiService.get<Borrowing[]>(API_CONFIG.endpoints.borrowing.overdue),
 };

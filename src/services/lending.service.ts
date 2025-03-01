@@ -1,100 +1,152 @@
-import { api } from "./api";
-import { API_CONFIG } from "@/config/api.config";
+import axios from 'axios';
 
-export interface GetPageRequestDto {
-  pageNumber?: number;
-  itemsPerPage?: number;
-  sortField?: string;
-  sortDirection?: string;
+// Create axios instance with default config
+const api = axios.create({
+  baseURL: 'http://localhost:5193/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: true // Enable sending cookies in cross-origin requests
+});
+
+// DTOs and Interfaces
+export interface LendingDto {
+  id: string;
+  borrowName: string;
+  date: string;
+  description: string;
+  status: number;
+  amount: number;
+  interestRate: number;
+  dueDate: string;
+  amountRepaid: number;
+  remainingAmount: number;
+  calculatedInterest: number;
+  totalDue: number;
+  lastRepaymentDate?: string;
+  isOverdue: boolean;
 }
 
-export interface GetLendingRequestDto extends GetPageRequestDto {
+export interface CreateLendingRequestDto {
+  borrowName: string;
+  description: string;
+  amount: number;
+  interestRate: number;
+  dueDate: string;
+}
+
+export interface UpdateLendingRequestDto {
   borrowName?: string;
+  description?: string;
+  amount?: number;
+  interestRate?: number;
+  dueDate?: string;
+}
+
+export interface GetLendingRequestDto {
+  pageNumber: number;
+  itemsPerPage: number;
+  borrowName?: string;
+  status?: number;
   fromDate?: Date;
   toDate?: Date;
   minAmount?: number;
   maxAmount?: number;
-  isOverdueOnly?: boolean;
-  status?: number;
+  sortField?: string;
+  sortDirection?: 'asc' | 'desc';
 }
 
-export interface Lending {
-  id: string;
-  borrowName: string;
+export interface RecordRepaymentRequestDto {
   amount: number;
-  interestRate: number;
-  dueDate: string;
-  description: string;
-  date: string;
-  status: number;
-  remainingAmount?: number;
-  payments?: LendingPayment[];
-}
-
-export interface LendingPayment {
-  id: string;
-  lendingId: string;
-  amount: number;
-  date: string;
   note?: string;
 }
 
+export interface ChangeLendingStatusDto {
+  status: number;
+}
+
+export interface BatchRepaymentRequestDto {
+  repayments: Record<string, number>;
+}
+
+export interface BatchRepaymentResponseDto {
+  remainingAmounts: Record<string, number>;
+}
+
 export interface LendingSummary {
+  totalLent: number;
+  totalOutstanding: number;
+  totalRepaid: number;
+  expectedInterest: number;
+  activeCount: number;
+  completedCount: number;
+  defaultedCount: number;
+  disputedCount: number;
+  overdueCount: number;
   totalActiveAmount: number;
   totalOverdueAmount: number;
   totalCompletedAmount: number;
-  activeCount: number;
-  overdueCount: number;
-  completedCount: number;
-  amountByStatus: Record<string, number>;
-  countByStatus: Record<string, number>;
 }
 
-export const lendingService = {
-  getAll: (params?: GetLendingRequestDto) =>
-    api.post(API_CONFIG.endpoints.lending.find, params),
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  pageNumber: number;
+  totalPages: number;
+}
 
-  create: (data: {
-    borrowName: string;
-    description: string;
-    amount: number;
-    date: string;
-    dueDate: string;
-    interestRate: number;
-    status?: number;
-  }) => api.post(API_CONFIG.endpoints.lending.create, data),
+export type Lending = LendingDto;
 
-  update: (
-    id: string,
-    data: {
-      borrowName?: string;
-      description?: string;
-      amount?: number;
-      date?: string;
-      dueDate?: string;
-      interestRate?: number;
-      status?: number;
-    }
-  ) => api.put(API_CONFIG.endpoints.lending.update.replace(":id", id), data),
+class LendingService {
+  private readonly baseUrl = '/lendings';
 
-  getById: (id: string) =>
-    api.get(API_CONFIG.endpoints.lending.getById.replace(":id", id)),
+  async create(lending: CreateLendingRequestDto): Promise<string> {
+    const response = await api.post(this.baseUrl, lending);
+    return response.data;
+  }
 
-  updateStatus: (id: string, status: number) =>
-    api.put(API_CONFIG.endpoints.lending.updateStatus.replace(":id", id), {
-      status,
-    }),
+  async getAll(params: GetLendingRequestDto): Promise<PaginatedResponse<Lending>> {
+    const response = await api.post(`${this.baseUrl}/find`, params);
+    return response.data;
+  }
 
-  delete: (id: string) =>
-    api.delete(API_CONFIG.endpoints.lending.delete.replace(":id", id)),
+  async getById(id: string): Promise<Lending> {
+    const response = await api.get(`${this.baseUrl}/${id}`);
+    return response.data;
+  }
 
-  recordPayment: (id: string, data: { amount: number; note?: string }) =>
-    api.post(
-      API_CONFIG.endpoints.lending.recordPayment.replace(":id", id),
-      data
-    ),
+  async update(id: string, lending: UpdateLendingRequestDto): Promise<void> {
+    await api.patch(`${this.baseUrl}/${id}`, lending);
+  }
 
-  getSummary: () => api.get(API_CONFIG.endpoints.lending.summary),
+  async delete(id: string): Promise<void> {
+    await api.delete(`${this.baseUrl}/${id}`);
+  }
 
-  getOverdue: () => api.get(API_CONFIG.endpoints.lending.overdue),
-};
+  async recordPayment(id: string, payment: RecordRepaymentRequestDto): Promise<number> {
+    const response = await api.post(`${this.baseUrl}/${id}/repayments`, payment);
+    return response.data;
+  }
+
+  async updateStatus(id: string, status: ChangeLendingStatusDto): Promise<Lending> {
+    const response = await api.patch(`${this.baseUrl}/${id}/status`, status);
+    return response.data;
+  }
+
+  async getSummary(): Promise<LendingSummary> {
+    const response = await api.get(`${this.baseUrl}/summary`);
+    return response.data;
+  }
+
+  async getOverdue(): Promise<Lending[]> {
+    const response = await api.get(`${this.baseUrl}/overdue`);
+    return response.data;
+  }
+
+  async processBatchRepayments(repayments: BatchRepaymentRequestDto): Promise<BatchRepaymentResponseDto> {
+    const response = await api.post(`${this.baseUrl}/batch-repayments`, repayments);
+    return response.data;
+  }
+}
+
+export const lendingService = new LendingService();

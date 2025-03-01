@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -110,12 +110,13 @@ const ManageSavings = () => {
   });
 
   // Fetch savings data
-  const { data: savings = [], isLoading, error, refetch } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['savings'],
     queryFn: async () => {
       try {
-        const data = await savingsService.getAll();
-        return data || []; // Ensure we return an array even if API returns null/undefined
+        const response = await savingsService.getAll();
+        console.log('API response for savings:', response);
+        return response;
       } catch (error) {
         console.error('Error in React Query fetch:', error);
         throw error; // Let React Query handle the error
@@ -124,6 +125,56 @@ const ManageSavings = () => {
     retry: 2, // Retry failed requests up to 2 times
     refetchOnWindowFocus: false, // Don't refetch when window regains focus
   });
+  
+  // Process data safely to ensure we always have an array
+  const savings = useMemo(() => {
+    try {
+      if (!data) return [];
+      
+      // Handle different response formats
+      if (Array.isArray(data)) {
+        return [...data];
+      }
+      
+      // Handle Axios response format
+      const dataAny = data as any;
+      
+      if (dataAny.data !== undefined) {
+        if (Array.isArray(dataAny.data)) {
+          return [...dataAny.data];
+        } else if (dataAny.data && typeof dataAny.data === 'object') {
+          // Check for items in the data object
+          if (dataAny.data.items && Array.isArray(dataAny.data.items)) {
+            return [...dataAny.data.items];
+          } else {
+            // Look for any array in the data object
+            const arrayInData = Object.values(dataAny.data).find(val => Array.isArray(val));
+            if (arrayInData) {
+              return [...arrayInData];
+            }
+          }
+        }
+      }
+      // Check for items directly in the response
+      else if (dataAny.items && Array.isArray(dataAny.items)) {
+        return [...dataAny.items];
+      }
+      // Last resort - look for any array in the object
+      else if (typeof dataAny === 'object') {
+        const arrayValues = Object.values(dataAny).find(val => Array.isArray(val));
+        if (arrayValues) {
+          return [...arrayValues];
+        }
+      }
+      
+      // Return empty array as fallback
+      console.warn('Could not extract savings array from response data:', data);
+      return [];
+    } catch (err) {
+      console.error('Error processing savings data:', err);
+      return [];
+    }
+  }, [data]);
 
   // Error state component to show more details
   const ErrorDisplay = ({ error }: { error: any }) => {

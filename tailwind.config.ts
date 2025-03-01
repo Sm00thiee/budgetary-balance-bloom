@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +60,8 @@ export default {
           'lending-dark': "#A7C7F5",
           spending: "#FEC6A1",
           'spending-dark': "#E5A274",
+          borrowing: "#FFE8D9",
+          'borrowing-dark': "#FFD1B8",
         },
       },
       borderRadius: {

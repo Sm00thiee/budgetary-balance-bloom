@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -149,13 +149,61 @@ const ManageSpending = () => {
   
   // Fetch categories with optimized fetching strategy
   const { 
-    data: categories = [], 
+    data: categoriesData, 
     isLoading: isCategoriesLoading,
     error: categoriesError
   } = useQuery({
     queryKey: ['spendingCategories'],
     queryFn: spendingService.getCategories
   });
+  
+  // Process categories data safely
+  const categories = useMemo<SpendingCategory[]>(() => {
+    try {
+      if (!categoriesData) return [];
+      
+      // Handle different response formats
+      if (Array.isArray(categoriesData)) {
+        return [...categoriesData];
+      }
+      
+      // Handle Axios response format
+      const dataAny = categoriesData as any;
+      
+      if (dataAny.data !== undefined) {
+        if (Array.isArray(dataAny.data)) {
+          return [...dataAny.data];
+        } else if (dataAny.data && typeof dataAny.data === 'object') {
+          // Check for items in the data object
+          if (dataAny.data.items && Array.isArray(dataAny.data.items)) {
+            return [...dataAny.data.items];
+          } else {
+            // Look for any array in the data object
+            const arrayInData = Object.values(dataAny.data).find(val => Array.isArray(val));
+            if (arrayInData) {
+              return [...arrayInData];
+            }
+          }
+        }
+      }
+      // Check for items directly in the response
+      else if (dataAny.items && Array.isArray(dataAny.items)) {
+        return [...dataAny.items];
+      }
+      // Last resort - look for any array in the object
+      else if (typeof dataAny === 'object') {
+        const arrayValues = Object.values(dataAny).find(val => Array.isArray(val));
+        if (arrayValues) {
+          return [...arrayValues];
+        }
+      }
+      
+      return [];
+    } catch (err) {
+      console.error('Error processing categories data:', err);
+      return [];
+    }
+  }, [categoriesData]);
   
   // Add global error handler for category errors
   useEffect(() => {
@@ -271,7 +319,7 @@ const ManageSpending = () => {
   
   // Fetch spending records
   const { 
-    data: spendings = [], 
+    data,
     isLoading: isSpendingsLoading,
     error: spendingsError,
     refetch: refetchSpendings
@@ -298,9 +346,58 @@ const ManageSpending = () => {
           
           console.log('Filter loading complete. Is filter applied:', hasActiveFilters);
         });
-    },
-    enabled: true // Always enabled since we don't need to check for type anymore
+    }
   });
+  
+  // Process spending data safely to ensure we always have an array
+  const spendings = useMemo(() => {
+    try {
+      if (!data) return [];
+      
+      // Handle different response formats
+      if (Array.isArray(data)) {
+        return [...data];
+      }
+      
+      // Handle Axios response format
+      const dataAny = data as any;
+      
+      if (dataAny.data !== undefined) {
+        if (Array.isArray(dataAny.data)) {
+          return [...dataAny.data];
+        } else if (dataAny.data && typeof dataAny.data === 'object') {
+          // Check for items in the data object
+          if (dataAny.data.items && Array.isArray(dataAny.data.items)) {
+            return [...dataAny.data.items];
+          } else {
+            // Look for any array in the data object
+            const arrayInData = Object.values(dataAny.data).find(val => Array.isArray(val));
+            if (arrayInData) {
+              return [...arrayInData];
+            }
+          }
+        }
+      }
+      // Check for items directly in the response
+      else if (dataAny.items && Array.isArray(dataAny.items)) {
+        return [...dataAny.items];
+      }
+      // Last resort - look for any array in the object
+      else if (typeof dataAny === 'object') {
+        const arrayValues = Object.values(dataAny).find(val => Array.isArray(val));
+        if (arrayValues) {
+          return [...arrayValues];
+        }
+      }
+      
+      // Return empty array as fallback
+      console.warn('Could not extract spendings array from response data:', data);
+      return [];
+    } catch (err) {
+      console.error('Error processing spendings data:', err);
+      return [];
+    }
+  }, [data]);
   
   // Mutations
   const createSpendingMutation = useMutation({

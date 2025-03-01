@@ -3,7 +3,7 @@ import { TransactionHistory } from "@/components/TransactionHistory";
 import { FinanceChart } from "@/components/FinanceChart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PiggyBank, Wallet, BanknoteIcon, DollarSign, UserCircle } from "lucide-react";
+import { PiggyBank, Wallet, BanknoteIcon, DollarSign, UserCircle, HandCoins } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { dashboardService } from "@/services/dashboard.service";
 import { useQuery } from "@tanstack/react-query";
@@ -46,6 +46,7 @@ const Index = () => {
       earnings: Number(item.earnings) || 0,
       savings: Number(item.savings) || 0,
       loans: Number(item.loans) || 0,
+      borrowings: Number(item.borrowings) || 0,
       spending: Number(item.spending) || 0,
       yearMonth: item.yearMonth
     }));
@@ -89,6 +90,13 @@ const Index = () => {
             </Button>
             <Button
               variant="outline"
+              onClick={() => navigate("/manage-borrowing")}
+            >
+              <HandCoins className="mr-2 h-4 w-4" />
+              Manage Borrowing
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => navigate("/profile")}
             >
               <UserCircle className="mr-2 h-4 w-4" />
@@ -97,7 +105,7 @@ const Index = () => {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-5">
           <SummaryCard
             title="Monthly Earnings"
             amount={`$${summaryData?.monthlyEarnings || 0}`}
@@ -115,12 +123,20 @@ const Index = () => {
             <PiggyBank className="h-4 w-4 text-muted-foreground" />
           </SummaryCard>
           <SummaryCard
-            title="Active Loans"
+            title="Active Loans Given"
             amount={`$${summaryData?.activeLoans || 0}`}
             description="Next payment: $500 due Apr 1"
             className="bg-finance-lending hover:bg-finance-lending-dark transition-colors"
           >
             <BanknoteIcon className="h-4 w-4 text-muted-foreground" />
+          </SummaryCard>
+          <SummaryCard
+            title="Active Borrowings"
+            amount={`$${summaryData?.activeBorrowings || 0}`}
+            description={`${summaryData?.borrowingCount || 0} active borrowings`}
+            className="bg-finance-borrowing hover:bg-finance-borrowing-dark transition-colors"
+          >
+            <HandCoins className="h-4 w-4 text-muted-foreground" />
           </SummaryCard>
           <SummaryCard
             title="Monthly Spending"
@@ -165,6 +181,7 @@ const Index = () => {
                       { key: "earnings", color: "#94A3B8" },
                       { key: "savings", color: "#D1E6B8" },
                       { key: "loans", color: "#FFB4B4" },
+                      { key: "borrowings", color: "#FFD1B8" },
                       { key: "spending", color: "#FFE4B8" }
                     ]}
                   />

@@ -19,6 +19,7 @@ interface ChartDataPoint {
   earnings: number;
   savings: number;
   loans: number;
+  borrowings: number;
   spending: number;
   yearMonth: string;
   [key: string]: string | number; // For any additional properties

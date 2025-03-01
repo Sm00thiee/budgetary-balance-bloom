@@ -46,41 +46,80 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 
 // Status codes
 enum BorrowingStatus {
-  Active = 1,
-  Completed = 2,
-  Defaulted = 3
+  Active = 0,
+  Completed = 1,
+  Defaulted = 2,
+  Renegotiated = 3
 }
 
 // Helper function to convert status number to string
-const getStatusText = (status: number): string => {
-  switch (status) {
+const getStatusText = (status: number | null | undefined): string => {
+  // Handle null/undefined status
+  if (status === null || status === undefined) {
+    return "Unknown";
+  }
+  
+  // Ensure status is a number
+  const statusNum = Number(status);
+  
+  // Check if status is in valid range
+  switch (statusNum) {
     case BorrowingStatus.Active:
       return "Active";
     case BorrowingStatus.Completed:
       return "Completed";
     case BorrowingStatus.Defaulted:
       return "Defaulted";
+    case BorrowingStatus.Renegotiated:
+      return "Renegotiated";
     default:
+      console.warn(`Invalid status value received: ${status}`);
       return "Unknown";
   }
 };
 
 // Helper function to get badge variant based on status
-const getStatusBadgeVariant = (status: number): "default" | "secondary" | "destructive" => {
-  switch (status) {
+const getStatusBadgeVariant = (status: number | null | undefined): "default" | "secondary" | "destructive" | "outline" => {
+  // Handle null/undefined status
+  if (status === null || status === undefined) {
+    return "default";
+  }
+  
+  // Ensure status is a number
+  const statusNum = Number(status);
+  
+  switch (statusNum) {
     case BorrowingStatus.Active:
       return "default";
     case BorrowingStatus.Completed:
       return "secondary";
     case BorrowingStatus.Defaulted:
       return "destructive";
+    case BorrowingStatus.Renegotiated:
+      return "outline";
     default:
       return "default";
   }
+};
+
+// Helper function to safely format dates
+const safeFormatDate = (dateString: string, formatPattern: string = "MMM d, yyyy"): string => {
+  if (!dateString) return "N/A";
+  
+  const date = parseISO(dateString);
+  return isValid(date) ? format(date, formatPattern) : "Invalid date";
+};
+
+// Helper function to check if a value is a valid BorrowingStatus
+const isValidBorrowingStatus = (status: any): boolean => {
+  const statusNum = Number(status);
+  return !isNaN(statusNum) && 
+         statusNum >= 0 && 
+         statusNum <= Object.keys(BorrowingStatus).length / 2 - 1;
 };
 
 const ManageBorrowing = () => {
@@ -124,9 +163,21 @@ const ManageBorrowing = () => {
         sortDirection: "asc"
       });
       
-      setEntries(response.items || []);
+      console.log("API Response:", response);
+      
+      // Process the entries to ensure status is correctly handled
+      const processedItems = response.items?.map(item => ({
+        ...item,
+        // Convert status to a number and ensure it's a valid enum value
+        status: isValidBorrowingStatus(item.status) ? Number(item.status) : BorrowingStatus.Active
+      })) || [];
+      
+      console.log("Processed items:", processedItems);
+      
+      setEntries(processedItems);
       setTotalItems(response.total || 0);
     } catch (error) {
+      console.error("Fetch borrowings error:", error);
       toast({
         title: "Error",
         description: "Failed to fetch borrowing data",
@@ -327,9 +378,9 @@ const ManageBorrowing = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${summary.totalActiveAmount.toFixed(2)}</div>
+                <div className="text-2xl font-bold">${(summary?.totalActiveAmount ?? 0).toFixed(2)}</div>
                 <p className="text-xs text-muted-foreground">
-                  {summary.activeCount} active borrowings
+                  {summary?.activeCount ?? 0} active borrowings
                 </p>
               </CardContent>
             </Card>
@@ -343,9 +394,9 @@ const ManageBorrowing = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${summary.totalOverdueAmount.toFixed(2)}</div>
+                <div className="text-2xl font-bold">${(summary?.totalOverdueAmount ?? 0).toFixed(2)}</div>
                 <p className="text-xs text-muted-foreground">
-                  {summary.overdueCount} overdue borrowings
+                  {summary?.overdueCount ?? 0} overdue borrowings
                 </p>
               </CardContent>
             </Card>
@@ -359,9 +410,9 @@ const ManageBorrowing = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${summary.totalCompletedAmount.toFixed(2)}</div>
+                <div className="text-2xl font-bold">${(summary?.totalCompletedAmount ?? 0).toFixed(2)}</div>
                 <p className="text-xs text-muted-foreground">
-                  {summary.completedCount} completed borrowings
+                  {summary?.completedCount ?? 0} completed borrowings
                 </p>
               </CardContent>
             </Card>
@@ -491,9 +542,10 @@ const ManageBorrowing = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="">All statuses</SelectItem>
-                      <SelectItem value="1">Active</SelectItem>
-                      <SelectItem value="2">Completed</SelectItem>
-                      <SelectItem value="3">Defaulted</SelectItem>
+                      <SelectItem value="0">Active</SelectItem>
+                      <SelectItem value="1">Completed</SelectItem>
+                      <SelectItem value="2">Defaulted</SelectItem>
+                      <SelectItem value="3">Renegotiated</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -573,15 +625,17 @@ const ManageBorrowing = () => {
                 ) : (
                   entries.map((entry) => (
                     <TableRow key={entry.id}>
-                      <TableCell>{format(new Date(entry.date), "MMM d, yyyy")}</TableCell>
+                      <TableCell>{safeFormatDate(entry.date)}</TableCell>
                       <TableCell>{entry.lenderName}</TableCell>
                       <TableCell>{entry.description}</TableCell>
                       <TableCell>${entry.amount.toFixed(2)}</TableCell>
                       <TableCell>{entry.interestRate.toFixed(1)}%</TableCell>
-                      <TableCell>{format(new Date(entry.dueDate), "MMM d, yyyy")}</TableCell>
+                      <TableCell>{safeFormatDate(entry.dueDate)}</TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(entry.status)}>
-                          {getStatusText(entry.status)}
+                          {isValidBorrowingStatus(entry.status) 
+                            ? getStatusText(entry.status) 
+                            : `Unknown (${entry.status})`}
                         </Badge>
                       </TableCell>
                       <TableCell>
