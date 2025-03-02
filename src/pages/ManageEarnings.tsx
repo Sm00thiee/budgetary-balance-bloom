@@ -141,7 +141,9 @@ const ManageEarnings = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
-  const [currentEntry, setCurrentEntry] = useState<Partial<EarningsEntry>>({});
+  const [currentEntry, setCurrentEntry] = useState<Partial<EarningsEntry>>({
+    date: new Date().toISOString().split('T')[0]
+  });
   const [safeEntries, setSafeEntries] = useState<any[]>([]);
 
   // Fetch earnings data
@@ -227,7 +229,9 @@ const ManageEarnings = () => {
         title: "Success",
         description: "Earnings entry added successfully",
       });
-      setCurrentEntry({});
+      setCurrentEntry({
+        date: new Date().toISOString().split('T')[0]
+      });
       setIsEditing(false);
     },
     onError: () => {
@@ -256,7 +260,9 @@ const ManageEarnings = () => {
         title: "Success",
         description: "Earnings entry updated successfully",
       });
-      setCurrentEntry({});
+      setCurrentEntry({
+        date: new Date().toISOString().split('T')[0]
+      });
       setIsEditing(false);
     },
     onError: () => {
@@ -289,7 +295,7 @@ const ManageEarnings = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentEntry.description || !currentEntry.amount || !currentEntry.category) {
+    if (!currentEntry.description || !currentEntry.amount || !currentEntry.category || !currentEntry.date) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -313,7 +319,7 @@ const ManageEarnings = () => {
         description: currentEntry.description!,
         amount: currentEntry.amount!,
         category: currentEntry.category!,
-        date: new Date().toISOString().split('T')[0]
+        date: currentEntry.date || new Date().toISOString().split('T')[0]
       });
     }
   };
@@ -408,6 +414,11 @@ const ManageEarnings = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Input
+                  type="date"
+                  value={currentEntry.date || new Date().toISOString().split('T')[0]}
+                  onChange={(e) => setCurrentEntry({ ...currentEntry, date: e.target.value })}
+                />
                 <Input
                   placeholder="Description"
                   value={currentEntry.description || ''}
