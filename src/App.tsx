@@ -9,7 +9,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import UserProfile from "./pages/UserProfile";
-import ManageEarnings from "./pages/ManageEarnings";
+import ManageEarningsNew from "./pages/ManageEarningsNew";
 import ManageSavings from "./pages/ManageSavings";
 import ManageSpending from "./pages/ManageSpending";
 import ManageLending from "./pages/ManageLending";
@@ -42,7 +42,7 @@ const App = () => (
             } />
             <Route path="/manage-earnings" element={
               <ProtectedRoute>
-                <ManageEarnings />
+                <ManageEarningsNew />
               </ProtectedRoute>
             } />
             <Route path="/manage-savings" element={
