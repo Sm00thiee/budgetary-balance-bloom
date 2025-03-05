@@ -54,7 +54,9 @@ const ManageEarningsNew = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
-  const [currentEntry, setCurrentEntry] = useState<Partial<EarningsEntry>>({});
+  const [currentEntry, setCurrentEntry] = useState<Partial<EarningsEntry>>({
+    date: new Date().toISOString().split('T')[0]
+  });
   const [earningsData, setEarningsData] = useState<EarningsEntry[]>([]);
 
   // Simplified data fetching
@@ -63,7 +65,7 @@ const ManageEarningsNew = () => {
     queryFn: async () => {
       try {
         const response = await earningsService.getAll();
-        console.log('API response:', response);
+        console.log('API response in ManageEarningsNew:', JSON.stringify(response));
         
         // Process the data safely
         let processedData: EarningsEntry[] = [];
@@ -78,6 +80,15 @@ const ManageEarningsNew = () => {
           if (arrayValues) {
             processedData = arrayValues as EarningsEntry[];
           }
+        }
+        
+        console.log('Processed data in ManageEarningsNew:', processedData);
+        
+        // Log date information for the first few entries
+        if (processedData.length > 0) {
+          console.log('First processed item:', processedData[0]);
+          console.log('Date field exists:', processedData[0].hasOwnProperty('date'));
+          console.log('Date value:', processedData[0].date);
         }
         
         setEarningsData(processedData);
@@ -97,17 +108,25 @@ const ManageEarningsNew = () => {
       amount: number;
       date: string;
       category: string;
-    }) => earningsService.create(data),
-    onSuccess: () => {
+    }) => {
+      console.log('Creating earning with data:', data);
+      console.log('Date being sent:', data.date);
+      return earningsService.create(data);
+    },
+    onSuccess: (response) => {
+      console.log('Create response:', response);
       queryClient.invalidateQueries({ queryKey: ['earnings'] });
       toast({
         title: "Success",
         description: "Earnings entry added successfully",
       });
-      setCurrentEntry({});
+      setCurrentEntry({
+        date: new Date().toISOString().split('T')[0]
+      });
       setIsEditing(false);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Create error:', error);
       toast({
         title: "Error",
         description: "Failed to add earnings entry",
@@ -126,17 +145,26 @@ const ManageEarningsNew = () => {
         date?: string;
         category?: string;
       }
-    }) => earningsService.update(id, data),
-    onSuccess: () => {
+    }) => {
+      console.log('Updating earning with id:', id);
+      console.log('Update data:', data);
+      console.log('Date being updated:', data.date);
+      return earningsService.update(id, data);
+    },
+    onSuccess: (response) => {
+      console.log('Update response:', response);
       queryClient.invalidateQueries({ queryKey: ['earnings'] });
       toast({
         title: "Success",
         description: "Earnings entry updated successfully",
       });
-      setCurrentEntry({});
+      setCurrentEntry({
+        date: new Date().toISOString().split('T')[0]
+      });
       setIsEditing(false);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Update error:', error);
       toast({
         title: "Error",
         description: "Failed to update earnings entry",
@@ -166,7 +194,7 @@ const ManageEarningsNew = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentEntry.description || !currentEntry.amount || !currentEntry.category) {
+    if (!currentEntry.description || !currentEntry.amount || !currentEntry.category || !currentEntry.date) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -190,7 +218,7 @@ const ManageEarningsNew = () => {
         description: currentEntry.description!,
         amount: currentEntry.amount!,
         category: currentEntry.category!,
-        date: new Date().toISOString().split('T')[0]
+        date: currentEntry.date || new Date().toISOString().split('T')[0]
       });
     }
   };
@@ -228,6 +256,11 @@ const ManageEarningsNew = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Input
+                  type="date"
+                  value={currentEntry.date || new Date().toISOString().split('T')[0]}
+                  onChange={(e) => setCurrentEntry({ ...currentEntry, date: e.target.value })}
+                />
                 <Input
                   placeholder="Description"
                   value={currentEntry.description || ''}

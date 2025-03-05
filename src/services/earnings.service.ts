@@ -1,4 +1,3 @@
-
 import { api } from './api';
 import { API_CONFIG } from '@/config/api.config';
 
@@ -17,7 +16,13 @@ export const earningsService = {
     amount?: number;
     date?: string;
     category?: string;
-  }) => api.put(API_CONFIG.endpoints.earnings.update, data, { id }),
+  }) => {
+    const url = API_CONFIG.endpoints.earnings.update.replace(':id', id);
+    return api.put(url, data);
+  },
   
-  delete: (id: string) => api.delete(API_CONFIG.endpoints.earnings.delete, { id }),
+  delete: (id: string) => {
+    const url = API_CONFIG.endpoints.earnings.delete.replace(':id', id);
+    return api.delete(url);
+  },
 };

@@ -152,7 +152,15 @@ const ManageEarnings = () => {
     queryFn: async () => {
       try {
         const response = await earningsService.getAll();
-        console.log('API response:', response);
+        console.log('Raw API response:', JSON.stringify(response));
+        
+        // Log the first item to inspect its structure
+        if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
+          console.log('First earning item:', response.data[0]);
+          console.log('Date field exists:', response.data[0].hasOwnProperty('date'));
+          console.log('Date value:', response.data[0].date);
+        }
+        
         return response;
       } catch (err) {
         console.error('Error fetching earnings:', err);
@@ -208,6 +216,19 @@ const ManageEarnings = () => {
       }
       
       console.log('Processed data:', processedData);
+      
+      // Log date information for the first few entries
+      if (processedData.length > 0) {
+        console.log('First processed item:', processedData[0]);
+        console.log('Date field exists in processed item:', processedData[0].hasOwnProperty('date'));
+        console.log('Date value in processed item:', processedData[0].date);
+        
+        // Check if date is being properly formatted
+        if (processedData[0].date) {
+          console.log('Formatted date:', new Date(processedData[0].date).toLocaleDateString());
+        }
+      }
+      
       setSafeEntries(processedData);
     } catch (error) {
       console.error('Error processing data:', error);

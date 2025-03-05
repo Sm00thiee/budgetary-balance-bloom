@@ -76,18 +76,13 @@ axiosInstance.interceptors.response.use(
   (error: AxiosError) => {
     // Handle 401 Unauthorized errors
     if (error.response && error.response.status === 401) {
-      console.log('Received 401 Unauthorized response - checking cookies');
+      console.log('Received 401 Unauthorized response');
       
-      // Check if the auth cookie is present
-      const hasCookie = hasAuthCookie();
-      console.log('Auth cookie present:', hasCookie);
+      // Check if the request was to an API endpoint that checks authentication
+      const isAuthCheckEndpoint = error.config?.url?.includes('/api/sessions/current/user');
       
       // Determine the appropriate error message
       let errorMessage = 'Authentication failed. Please log in again.';
-      
-      if (!hasCookie) {
-        errorMessage = 'Your session has expired. Please log in again.';
-      }
       
       // If the error response contains a more specific message, use it
       if (error.response.data && typeof error.response.data === 'object') {
@@ -97,8 +92,15 @@ axiosInstance.interceptors.response.use(
         }
       }
       
-      // Call the auth error handler with the error message
-      authErrorHandler(errorMessage);
+      // Only trigger auth error handler if this was an auth check endpoint
+      // or if we're certain the user is logged out
+      if (isAuthCheckEndpoint) {
+        console.log('Auth check endpoint failed with 401, triggering logout');
+        authErrorHandler(errorMessage);
+      } else {
+        console.log('API endpoint failed with 401, but not triggering automatic logout');
+        // Let the specific component handle the error
+      }
     }
     
     // For all errors, pass them through

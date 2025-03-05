@@ -310,7 +310,7 @@ const ManageBorrowing = () => {
     }
 
     try {
-      await borrowingService.recordPayment(currentPaymentId, {
+      const remainingAmount = await borrowingService.recordPayment(currentPaymentId, {
         amount: Number(paymentAmount),
         note: paymentNote || undefined
       });
@@ -321,14 +321,19 @@ const ManageBorrowing = () => {
       
       toast({
         title: "Success",
-        description: "Payment recorded successfully",
+        description: `Payment recorded successfully. Remaining amount: $${remainingAmount.toFixed(2)}`,
       });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to record payment",
-        variant: "destructive",
-      });
+      console.error("Payment recording error:", error);
+      
+      // Only show error toast if there's an actual error
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to record payment",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -612,13 +617,14 @@ const ManageBorrowing = () => {
                   <TableHead>Interest</TableHead>
                   <TableHead>Due Date</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Repaid</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {entries.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-4 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-4 text-muted-foreground">
                       No borrowing records found
                     </TableCell>
                   </TableRow>
@@ -637,6 +643,21 @@ const ManageBorrowing = () => {
                             ? getStatusText(entry.status) 
                             : `Unknown (${entry.status})`}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-2">
+                          <div className="text-sm">
+                            Repaid: ${entry.amountRepaid?.toFixed(2) || "0.00"}
+                          </div>
+                          <div className="text-sm">
+                            Remaining: ${entry.remainingAmount?.toFixed(2) || entry.amount.toFixed(2)}
+                          </div>
+                          {entry.lastRepaymentDate && (
+                            <div className="text-xs text-muted-foreground">
+                              Last payment: {format(new Date(entry.lastRepaymentDate), "MMM dd, yyyy")}
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">

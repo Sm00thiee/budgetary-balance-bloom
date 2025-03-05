@@ -33,14 +33,17 @@ export interface CreateLendingRequestDto {
   amount: number;
   interestRate: number;
   dueDate: string;
+  date: string;
 }
 
 export interface UpdateLendingRequestDto {
-  borrowName?: string;
-  description?: string;
-  amount?: number;
-  interestRate?: number;
-  dueDate?: string;
+  borrowName: string;
+  description: string;
+  amount: number;
+  interestRate: number;
+  status?: string;
+  dueDate: string;
+  date: string;
 }
 
 export interface GetLendingRequestDto {

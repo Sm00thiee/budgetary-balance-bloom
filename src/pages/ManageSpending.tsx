@@ -123,8 +123,8 @@ const ManageSpending = () => {
   
   // Filters
   const [filters, setFilters] = useState<FilterFormValues>({
-    fromDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-    toDate: new Date(),
+    fromDate: null,
+    toDate: null,
     categoryIds: []
   });
   
@@ -235,6 +235,12 @@ const ManageSpending = () => {
     const toDateParam = searchParams.get('toDate');
     const categoryIdsParam = searchParams.get('categoryIds');
     
+    // Only update filters if we have actual parameters in the URL
+    // This prevents filters from being applied automatically at page load
+    if (!fromDateParam && !toDateParam && !categoryIdsParam) {
+      return;
+    }
+    
     const newFilters: FilterFormValues = {
       fromDate: fromDateParam ? new Date(fromDateParam) : null,
       toDate: toDateParam ? new Date(toDateParam) : null,
@@ -310,7 +316,7 @@ const ManageSpending = () => {
       formattedFilters.toDate = spendingService.formatDateForApi(format(debouncedFilters.toDate, 'yyyy-MM-dd'));
     }
     
-    if (debouncedFilters.categoryIds.length > 0) {
+    if (debouncedFilters.categoryIds && debouncedFilters.categoryIds.length > 0) {
       formattedFilters.categoryIds = debouncedFilters.categoryIds;
     }
     
@@ -334,17 +340,18 @@ const ManageSpending = () => {
       // Log the actual request being made
       console.log('Fetching spendings with formatted filters:', formattedFilters);
       
+      // Check if there are any active filters
+      const hasFilters = !!debouncedFilters.fromDate || 
+                        !!debouncedFilters.toDate || 
+                        (debouncedFilters.categoryIds && debouncedFilters.categoryIds.length > 0);
+      
+      // Update filter applied state
+      setIsFilterApplied(hasFilters);
+      
       return spendingService.getRecords(formattedFilters)
         .finally(() => {
           setIsFilterLoading(false);
-          
-          // Update filter applied state based on current filters
-          const hasActiveFilters = !!debouncedFilters.fromDate || 
-                                   !!debouncedFilters.toDate || 
-                                   debouncedFilters.categoryIds.length > 0;
-          setIsFilterApplied(hasActiveFilters);
-          
-          console.log('Filter loading complete. Is filter applied:', hasActiveFilters);
+          console.log("Finished loading spending records, filter applied:", hasFilters);
         });
     }
   });
@@ -516,6 +523,8 @@ const ManageSpending = () => {
    * Clear all filters to reset the view
    */
   const handleClearFilters = () => {
+    console.log("Clearing all filters");
+    
     // Create cleared filters object with explicitly empty values
     const clearedFilters: FilterFormValues = {
       fromDate: null,
@@ -523,22 +532,25 @@ const ManageSpending = () => {
       categoryIds: []
     };
     
+    // First clear URL parameters - this is important to do first
+    // to avoid race conditions with the useEffect hooks
+    setSearchParams(new URLSearchParams(), { replace: true });
+    
     // Update state with cleared filters
     setFilters(clearedFilters);
     
-    // Reset form with cleared values
+    // Reset filter form
     filterForm.reset(clearedFilters);
     
     // Mark filters as not applied
     setIsFilterApplied(false);
     
-    // Important: Clear URL parameters completely
-    if (searchParams.toString() !== '') {
-      setSearchParams(new URLSearchParams(), { replace: true });
-    }
-    
     // Force a refetch of data with cleared filters
-    queryClient.invalidateQueries({ queryKey: ['spendings'] });
+    // Use setTimeout to ensure this happens after state updates
+    setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: ['spendings'] });
+      refetchSpendings();
+    }, 0);
     
     // Close filter dialog if open
     if (isFilterDialogOpen) {
@@ -562,13 +574,15 @@ const ManageSpending = () => {
   
   // Get category name by ID
   const getCategoryName = (categoryId: number): string => {
+    if (!categoryId) return '';
     const category = categories.find(c => c.id === categoryId);
     return category ? category.name : '';
   };
   
   // Get formatted category names for an array of IDs
-  const getCategoryNames = (categoryIds: number[]): string => {
-    return categoryIds.map(id => getCategoryName(id)).join(', ');
+  const getCategoryNames = (categoryIds: number[] | null | undefined): string => {
+    if (!categoryIds || !Array.isArray(categoryIds) || categoryIds.length === 0) return '';
+    return categoryIds.map(id => getCategoryName(id)).filter(Boolean).join(', ');
   };
   
   return (
@@ -1053,10 +1067,7 @@ const ManageSpending = () => {
                   <Button 
                     type="button" 
                     variant="outline" 
-                    onClick={() => {
-                      handleClearFilters();
-                      setIsFilterDialogOpen(false);
-                    }}
+                    onClick={handleClearFilters}
                   >
                     Clear All Filters
                   </Button>

@@ -28,6 +28,8 @@ export interface Borrowing {
   date: string;
   status: number;
   remainingAmount?: number;
+  amountRepaid?: number;
+  lastRepaymentDate?: string;
   payments?: BorrowingPayment[];
 }
 
@@ -89,7 +91,7 @@ export const borrowingService = {
     apiService.delete<void>(API_CONFIG.endpoints.borrowing.delete.replace(":id", id)),
 
   recordPayment: (id: string, data: { amount: number; note?: string }) =>
-    apiService.post<void>(
+    apiService.post<number>(
       API_CONFIG.endpoints.borrowing.recordPayment.replace(":id", id),
       data
     ),

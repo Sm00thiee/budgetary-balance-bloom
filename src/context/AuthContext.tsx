@@ -31,6 +31,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -43,9 +44,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // With cookies, we trust the browser to handle token expiration
       // So we just restore the user session
       try {
+        // Import and use the setUserLoggedIn function
+        import('@/services/auth-cookie').then(({ setUserLoggedIn }) => {
+          setUserLoggedIn(true);
+          console.log('Restored user logged in state from localStorage');
+        });
+        
         setUser(JSON.parse(storedUser));
         setIsAuthenticated(true);
         console.log('User session restored from localStorage');
+        
+        // Verify the session is still valid with the server
+        // This is done silently in the background
+        api.get('/api/sessions/current/user')
+          .then(() => {
+            console.log('Session verified with server');
+          })
+          .catch(error => {
+            console.warn('Session verification failed:', error);
+            // We don't automatically log out here, we let the API interceptor handle it
+            // This prevents immediate logout on page load if there's a temporary API issue
+          });
       } catch (error) {
         console.error('Error parsing stored user data:', error);
         performLogout('Authentication error. Please log in again.');
@@ -56,6 +75,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Perform the actual logout process
   const performLogout = async (message?: string) => {
     try {
+      // Set loading state
+      setIsLoading(true);
+      
       // Reset the auth state
       resetAuth();
       
@@ -69,40 +91,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         });
     } catch (error) {
       console.error('Error during server logout:', error);
-    }
-
-    // Clear auth data from localStorage
-    localStorage.removeItem('user');
-    localStorage.removeItem('isAuthenticated');
-    
-    // Attempt to clear the auth cookie by setting an expired version
-    try {
-      // Try different cookie clearing approaches to handle various scenarios
-      document.cookie = 'jwt.mytoken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;';
-      document.cookie = 'jwt.mytoken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=' + window.location.hostname + ';';
+    } finally {
+      // Clear auth data from localStorage
+      localStorage.removeItem('user');
+      localStorage.removeItem('isAuthenticated');
       
-      // For secure cookies, also try with secure and samesite attributes
-      document.cookie = 'jwt.mytoken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; secure; samesite=none;';
+      // Attempt to clear the auth cookie by setting an expired version
+      try {
+        // Try different cookie clearing approaches to handle various scenarios
+        document.cookie = 'jwt.mytoken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;';
+        document.cookie = 'jwt.mytoken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=' + window.location.hostname + ';';
+        
+        // For secure cookies, also try with secure and samesite attributes
+        document.cookie = 'jwt.mytoken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; secure; samesite=none;';
+        
+        console.log('Attempted to clear auth cookies');
+      } catch (error) {
+        console.error('Error clearing auth cookies:', error);
+      }
       
-      console.log('Attempted to clear auth cookies');
-    } catch (error) {
-      console.error('Error clearing auth cookies:', error);
+      // Reset state
+      setUser(null);
+      setIsAuthenticated(false);
+      setIsLoading(false);
+      
+      // Show toast message if provided
+      if (message) {
+        toast({
+          title: 'Authentication',
+          description: message,
+        });
+      }
+      
+      // Redirect to login page
+      navigate('/login');
     }
-    
-    // Reset state
-    setUser(null);
-    setIsAuthenticated(false);
-    
-    // Show toast message if provided
-    if (message) {
-      toast({
-        title: 'Authentication',
-        description: message,
-      });
-    }
-    
-    // Redirect to login page
-    navigate('/login');
   };
 
   // Check if token is expired - for cookie-based auth, we rely on the server to check
@@ -116,6 +139,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Login function - stores user data
   const login = (authMethod: string, userData: User) => {
     try {
+      // Set loading state to prevent immediate redirects
+      setIsLoading(true);
+      
       console.log('Login function called with auth method:', authMethod);
       
       if (!userData) {
@@ -144,6 +170,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         description: error instanceof Error ? error.message : 'Failed to login',
       });
       throw error;
+    } finally {
+      // Authentication process is complete
+      setIsLoading(false);
     }
   };
 

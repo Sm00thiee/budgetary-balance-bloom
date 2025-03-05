@@ -157,6 +157,9 @@ const ManageLending = () => {
   const [maxAmount, setMaxAmount] = useState<number | "">("");
   const [showFilters, setShowFilters] = useState(false);
 
+  // Editing or adding a new entry
+  const [isAddingNew, setIsAddingNew] = useState(false);
+
   const fetchLendings = async () => {
     try {
       const response = await lendingService.getAll({
@@ -215,66 +218,68 @@ const ManageLending = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentEntry.borrowName || !currentEntry.description || !currentEntry.amount || !currentEntry.dueDate || currentEntry.interestRate === undefined) {
+    
+    if (!currentEntry.borrowName) {
       toast({
         title: "Error",
-        description: "Please fill in all fields",
+        description: "Borrower name is required",
         variant: "destructive",
       });
       return;
     }
-
-    // Validate the due date
-    const dueDate = parseSafeDate(currentEntry.dueDate);
-    if (!dueDate) {
+    
+    if (!currentEntry.amount || isNaN(Number(currentEntry.amount)) || Number(currentEntry.amount) <= 0) {
       toast({
         title: "Error",
-        description: "Please enter a valid due date",
+        description: "Please enter a valid amount",
         variant: "destructive",
       });
       return;
     }
-
+    
     try {
-      if (isEditing && currentEntry.id) {
-        const updateData: UpdateLendingRequestDto = {
-          borrowName: currentEntry.borrowName,
-          description: currentEntry.description,
-          amount: currentEntry.amount,
-          interestRate: currentEntry.interestRate,
-          dueDate: dueDate.toISOString().split('T')[0]
-        };
-        await lendingService.update(currentEntry.id, updateData);
+      if (isAddingNew) {
+        // Create new lending
+        await lendingService.create({
+          borrowName: currentEntry.borrowName!,
+          description: currentEntry.description || '',
+          amount: Number(currentEntry.amount),
+          interestRate: Number(currentEntry.interestRate) || 0,
+          dueDate: currentEntry.dueDate || '',
+          date: currentEntry.date || format(new Date(), 'yyyy-MM-dd'),
+        });
+        
         toast({
           title: "Success",
-          description: "Loan entry updated successfully",
+          description: "New lending created successfully",
         });
       } else {
-        const newLending: CreateLendingRequestDto = {
+        // Update existing lending
+        await lendingService.update(currentEntry.id!, {
           borrowName: currentEntry.borrowName,
-          description: currentEntry.description,
-          amount: currentEntry.amount,
-          interestRate: currentEntry.interestRate,
-          dueDate: dueDate.toISOString().split('T')[0]
-        };
-        await lendingService.create(newLending);
+          description: currentEntry.description || '',
+          amount: Number(currentEntry.amount),
+          interestRate: Number(currentEntry.interestRate) || 0,
+          status: currentEntry.status !== undefined ? String(currentEntry.status) : '0',
+          dueDate: currentEntry.dueDate || '',
+          date: currentEntry.date || format(new Date(), 'yyyy-MM-dd'),
+        });
+        
         toast({
           title: "Success",
-          description: "Loan entry added successfully",
+          description: "Lending updated successfully",
         });
       }
       
-      // Refresh data
+      setIsAddingNew(false);
+      setIsEditing(false);
       fetchLendings();
       fetchSummary();
-      
-      // Reset form
-      setCurrentEntry({});
-      setIsEditing(false);
     } catch (error) {
+      console.error("Error submitting form:", error);
       toast({
         title: "Error",
-        description: "Failed to save lending entry",
+        description: "Failed to save lending data",
         variant: "destructive",
       });
     }
@@ -377,6 +382,20 @@ const ManageLending = () => {
     setCurrentPage(page);
   };
 
+  // Editing or adding a new entry
+  const handleAddNew = () => {
+    setIsAddingNew(true);
+    setIsEditing(true);
+    setCurrentEntry({
+      borrowName: "",
+      description: "",
+      amount: 0,
+      interestRate: 0,
+      dueDate: "",
+      date: format(new Date(), 'yyyy-MM-dd'),
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="space-y-8">
@@ -461,59 +480,69 @@ const ManageLending = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="borrowName">Borrower Name</Label>
-                  <Input
-                    id="borrowName"
-                    placeholder="Who borrowed the money"
-                    value={currentEntry.borrowName || ''}
-                    onChange={(e) => setCurrentEntry({ ...currentEntry, borrowName: e.target.value })}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Amount</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    step="0.01"
-                    placeholder="Loan amount"
-                    value={currentEntry.amount || ''}
-                    onChange={(e) => setCurrentEntry({ ...currentEntry, amount: parseFloat(e.target.value) })}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="interestRate">Interest Rate (%)</Label>
-                  <Input
-                    id="interestRate"
-                    type="number"
-                    step="0.01"
-                    placeholder="Annual interest rate"
-                    value={currentEntry.interestRate ?? ''}
-                    onChange={(e) => setCurrentEntry({ ...currentEntry, interestRate: parseFloat(e.target.value) })}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="dueDate">Due Date</Label>
-                  <Input
-                    id="dueDate"
-                    type="date"
-                    value={currentEntry.dueDate || ''}
-                    onChange={(e) => setCurrentEntry({ ...currentEntry, dueDate: e.target.value })}
-                  />
-                </div>
-                
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Input
-                    id="description"
-                    placeholder="Purpose of the loan"
-                    value={currentEntry.description || ''}
-                    onChange={(e) => setCurrentEntry({ ...currentEntry, description: e.target.value })}
-                  />
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="borrowName">Borrower Name</Label>
+                    <Input
+                      id="borrowName"
+                      placeholder="Enter borrower name"
+                      value={currentEntry.borrowName || ""}
+                      onChange={(e) => setCurrentEntry({...currentEntry, borrowName: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="date">Date</Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={currentEntry.date ? format(new Date(currentEntry.date), "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd")}
+                      onChange={(e) => setCurrentEntry({...currentEntry, date: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="amount">Amount</Label>
+                    <Input
+                      id="amount"
+                      type="number"
+                      placeholder="Enter amount"
+                      value={currentEntry.amount || ""}
+                      onChange={(e) => setCurrentEntry({...currentEntry, amount: parseFloat(e.target.value)})}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="interestRate">Interest Rate (%)</Label>
+                    <Input
+                      id="interestRate"
+                      type="number"
+                      placeholder="Enter interest rate"
+                      value={currentEntry.interestRate || ""}
+                      onChange={(e) => setCurrentEntry({...currentEntry, interestRate: parseFloat(e.target.value)})}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="dueDate">Due Date</Label>
+                    <Input
+                      id="dueDate"
+                      type="date"
+                      value={currentEntry.dueDate ? format(new Date(currentEntry.dueDate), "yyyy-MM-dd") : ""}
+                      onChange={(e) => setCurrentEntry({...currentEntry, dueDate: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Input
+                      id="description"
+                      placeholder="Enter description"
+                      value={currentEntry.description || ""}
+                      onChange={(e) => setCurrentEntry({...currentEntry, description: e.target.value})}
+                    />
+                  </div>
                 </div>
               </div>
               
@@ -639,12 +668,11 @@ const ManageLending = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
                   <TableHead>Borrower</TableHead>
-                  <TableHead>Description</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Due Date</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Interest</TableHead>
-                  <TableHead>Due Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Repaid</TableHead>
                   <TableHead>Actions</TableHead>
@@ -660,16 +688,13 @@ const ManageLending = () => {
                 ) : (
                   entries.map((entry) => (
                     <TableRow key={entry.id}>
-                      <TableCell>
-                        {safeFormatDate(entry.date)}
-                      </TableCell>
                       <TableCell>{entry.borrowName}</TableCell>
-                      <TableCell>{entry.description}</TableCell>
+                      <TableCell>{entry.date ? format(new Date(entry.date), "MMM dd, yyyy") : "N/A"}</TableCell>
+                      <TableCell>
+                        {entry.dueDate ? format(new Date(entry.dueDate), "MMM dd, yyyy") : "N/A"}
+                      </TableCell>
                       <TableCell>${entry.amount.toFixed(2)}</TableCell>
                       <TableCell>{entry.interestRate.toFixed(1)}%</TableCell>
-                      <TableCell>
-                        {safeFormatDate(entry.dueDate)}
-                      </TableCell>
                       <TableCell>
                         <Badge 
                           variant={getStatusBadgeVariant(entry.status)}
@@ -691,7 +716,7 @@ const ManageLending = () => {
                           </div>
                           {entry.lastRepaymentDate && (
                             <div className="text-xs text-muted-foreground">
-                              Last payment: {safeFormatDate(entry.lastRepaymentDate)}
+                              Last payment: {format(new Date(entry.lastRepaymentDate), "MMM dd, yyyy")}
                             </div>
                           )}
                         </div>
