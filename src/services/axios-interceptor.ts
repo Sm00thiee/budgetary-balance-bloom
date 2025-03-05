@@ -39,41 +39,23 @@ axiosInstance.interceptors.request.use(
     const correlationId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
     console.log(`Request [${correlationId}] to ${config.url} - checking auth`);
     
-    // Check authentication status
-    const isUserAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-    const hasCookie = hasAuthCookie();
+    // Check authentication status - rely on the hasAuthCookie helper
+    const isAuthenticated = hasAuthCookie();
     
     console.log(`Auth status [${correlationId}]:`, { 
-      localStorage: isUserAuthenticated, 
-      cookie: hasCookie,
+      authenticated: isAuthenticated,
       url: config.url
     });
     
     // For non-auth endpoints, check if user is authenticated
-    if (!isUserAuthenticated || !hasCookie) {
+    if (!isAuthenticated) {
       console.log(`Authentication failed [${correlationId}]:`, {
-        isUserAuthenticated,
-        hasCookie,
         url: config.url
       });
       
       // User is not authenticated, handle auth error and reject the request
-      // For development, we might want to allow requests even without the cookie
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      const shouldBlockRequest = isDevelopment ? (!isUserAuthenticated) : (!isUserAuthenticated || !hasCookie);
-      
-      if (shouldBlockRequest) {
-        // In development, we'll only block if localStorage auth is missing
-        // In production, we'll block if either check fails
-        authErrorHandler(
-          !hasCookie 
-            ? 'Your session has expired. Please log in again.' 
-            : 'You are not authenticated. Please log in.'
-        );
-        return Promise.reject(new Error('Not authenticated'));
-      } else {
-        console.log(`Warning [${correlationId}]: Proceeding with request despite authentication issues - DEVELOPMENT MODE`);
-      }
+      authErrorHandler('You are not authenticated. Please log in.');
+      return Promise.reject(new Error('Not authenticated'));
     }
     
     console.log(`Request authenticated [${correlationId}], proceeding`);

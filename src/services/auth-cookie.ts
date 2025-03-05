@@ -9,6 +9,11 @@ let hasUserLoggedIn = false;
 export const setUserLoggedIn = (value: boolean) => {
   console.log('Setting user logged in state:', value);
   hasUserLoggedIn = value;
+  
+  // When user logs in, also update localStorage
+  if (value) {
+    localStorage.setItem('isAuthenticated', 'true');
+  }
 };
 
 /**
@@ -18,6 +23,7 @@ export const setUserLoggedIn = (value: boolean) => {
 export const resetAuth = () => {
   console.log('Resetting auth state');
   hasUserLoggedIn = false;
+  localStorage.removeItem('isAuthenticated');
 };
 
 /**
@@ -35,12 +41,12 @@ export const hasAuthCookie = (): boolean => {
     return true;
   }
   
-  // 2. Check if there are any visible cookies (though the JWT might be HTTP-only)
-  const hasSomeCookies = document.cookie.length > 0;
-  console.log('Has some cookies:', hasSomeCookies);
-  
-  // 3. Check localStorage flag as a last resort
+  // 2. Check localStorage flag
   const isAuthenticatedInStorage = localStorage.getItem('isAuthenticated') === 'true';
+  if (isAuthenticatedInStorage) {
+    console.log('User is authenticated according to localStorage');
+    return true;
+  }
   
   // In a real-world scenario with HTTP-only cookies, we'd need to rely on:
   // - Server responses to determine if we're still authenticated
@@ -48,12 +54,8 @@ export const hasAuthCookie = (): boolean => {
   
   console.log('Auth cookie inference:', {
     userLoggedIn: hasUserLoggedIn,
-    hasSomeCookies,
     isAuthenticatedInStorage
   });
   
-  // For development, we might want to assume the cookie exists if the user is marked as authenticated
-  // For production, a more robust approach would be needed
-  const inDevelopment = process.env.NODE_ENV === 'development';
-  return inDevelopment ? isAuthenticatedInStorage : (hasUserLoggedIn || hasSomeCookies);
+  return false;
 }; 

@@ -130,6 +130,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(userData);
       setIsAuthenticated(true);
       
+      // Set the flag in the auth-cookie service
+      // This ensures other parts of the application know we're logged in
+      import('@/services/auth-cookie').then(({ setUserLoggedIn }) => {
+        setUserLoggedIn(true);
+      });
+      
       console.log('Login successful, auth state updated');
     } catch (error) {
       console.error('Login error:', error);
