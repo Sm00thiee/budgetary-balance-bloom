@@ -36,6 +36,11 @@ interface EarningsEntry {
   category: string;
 }
 
+interface ApiResponse {
+  items?: EarningsEntry[];
+  [key: string]: any;
+}
+
 const CATEGORIES = [
   "Salary",
   "Investments",
@@ -62,12 +67,14 @@ const ManageEarningsNew = () => {
         
         // Process the data safely
         let processedData: EarningsEntry[] = [];
-        if (Array.isArray(response)) {
-          processedData = response;
-        } else if (response?.items && Array.isArray(response.items)) {
-          processedData = response.items;
-        } else if (typeof response === 'object') {
-          const arrayValues = Object.values(response).find(val => Array.isArray(val));
+        const data = response.data as ApiResponse; // Type assertion
+        
+        if (Array.isArray(data)) {
+          processedData = data as EarningsEntry[];
+        } else if (data?.items && Array.isArray(data.items)) {
+          processedData = data.items;
+        } else if (typeof data === 'object') {
+          const arrayValues = Object.values(data).find(val => Array.isArray(val));
           if (arrayValues) {
             processedData = arrayValues as EarningsEntry[];
           }
