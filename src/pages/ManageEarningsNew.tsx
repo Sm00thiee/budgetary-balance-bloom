@@ -13,6 +13,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableEmpty,
+  TableLoading,
+  TableActions
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,6 +30,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { earningsService } from "@/services/earnings.service";
+import { formatCurrency, formatDate, displayValue } from "@/lib/table-utils";
 
 interface EarningsEntry {
   id: string;
@@ -312,20 +316,16 @@ const ManageEarningsNew = () => {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4">
-                      Loading...
-                    </TableCell>
-                  </TableRow>
+                  <TableLoading colSpan={5} />
                 ) : earningsData.length > 0 ? (
                   earningsData.map((entry) => (
                     <TableRow key={entry.id || Math.random().toString()}>
-                      <TableCell>{entry.date ? new Date(entry.date).toLocaleDateString() : 'N/A'}</TableCell>
-                      <TableCell>{entry.description || 'N/A'}</TableCell>
-                      <TableCell>${typeof entry.amount === 'number' ? entry.amount.toFixed(2) : 'N/A'}</TableCell>
-                      <TableCell>{entry.category || 'N/A'}</TableCell>
+                      <TableCell>{formatDate(entry.date)}</TableCell>
+                      <TableCell>{displayValue(entry.description)}</TableCell>
+                      <TableCell>{formatCurrency(entry.amount)}</TableCell>
+                      <TableCell>{displayValue(entry.category)}</TableCell>
                       <TableCell>
-                        <div className="flex space-x-2">
+                        <TableActions>
                           <Button
                             variant="outline"
                             size="icon"
@@ -341,16 +341,12 @@ const ManageEarningsNew = () => {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                        </div>
+                        </TableActions>
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
-                      No earnings records found
-                    </TableCell>
-                  </TableRow>
+                  <TableEmpty colSpan={5} message="No earnings records found" />
                 )}
               </TableBody>
             </Table>

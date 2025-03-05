@@ -14,6 +14,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableEmpty,
+  TableLoading,
+  TableActions
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import {
@@ -54,6 +57,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { format, isValid, parseISO } from "date-fns";
+import { formatCurrency, formatDate, displayValue } from "@/lib/table-utils";
 
 // Status codes
 enum LendingStatus {
@@ -680,20 +684,14 @@ const ManageLending = () => {
               </TableHeader>
               <TableBody>
                 {entries.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-4 text-muted-foreground">
-                      No lending records found
-                    </TableCell>
-                  </TableRow>
-                ) : (
+                  <TableEmpty colSpan={8} message="No lending records found" />
+                ) :
                   entries.map((entry) => (
                     <TableRow key={entry.id}>
-                      <TableCell>{entry.borrowName}</TableCell>
-                      <TableCell>{entry.date ? format(new Date(entry.date), "MMM dd, yyyy") : "N/A"}</TableCell>
-                      <TableCell>
-                        {entry.dueDate ? format(new Date(entry.dueDate), "MMM dd, yyyy") : "N/A"}
-                      </TableCell>
-                      <TableCell>${entry.amount.toFixed(2)}</TableCell>
+                      <TableCell>{displayValue(entry.borrowName)}</TableCell>
+                      <TableCell>{formatDate(entry.date)}</TableCell>
+                      <TableCell>{formatDate(entry.dueDate)}</TableCell>
+                      <TableCell>{formatCurrency(entry.amount)}</TableCell>
                       <TableCell>{entry.interestRate.toFixed(1)}%</TableCell>
                       <TableCell>
                         <Badge 
@@ -709,20 +707,20 @@ const ManageLending = () => {
                       <TableCell>
                         <div className="flex flex-col gap-2">
                           <div className="text-sm">
-                            Repaid: ${entry.amountRepaid.toFixed(2)}
+                            Repaid: {formatCurrency(entry.amountRepaid)}
                           </div>
                           <div className="text-sm">
-                            Remaining: ${entry.remainingAmount.toFixed(2)}
+                            Remaining: {formatCurrency(entry.remainingAmount)}
                           </div>
                           {entry.lastRepaymentDate && (
                             <div className="text-xs text-muted-foreground">
-                              Last payment: {format(new Date(entry.lastRepaymentDate), "MMM dd, yyyy")}
+                              Last payment: {formatDate(entry.lastRepaymentDate)}
                             </div>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex space-x-2">
+                        <TableActions>
                           {entry.status === LendingStatus.Active && (
                             <Button
                               variant="outline"
@@ -749,11 +747,11 @@ const ManageLending = () => {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                        </div>
+                        </TableActions>
                       </TableCell>
                     </TableRow>
                   ))
-                )}
+                }
               </TableBody>
             </Table>
             

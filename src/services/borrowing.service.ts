@@ -31,6 +31,7 @@ export interface Borrowing {
   amountRepaid?: number;
   lastRepaymentDate?: string;
   payments?: BorrowingPayment[];
+  isOverdue?: boolean;
 }
 
 export interface BorrowingPayment {

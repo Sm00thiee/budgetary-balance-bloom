@@ -14,6 +14,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableEmpty,
+  TableLoading,
+  TableActions
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import {
@@ -63,6 +66,7 @@ import {
 } from "@/components/ui/dialog";
 import { CategoryCombobox, MultiCategoryCombobox } from "@/components/CategoryCombobox";
 import { Badge } from "@/components/ui/badge";
+import { formatCurrency, formatDate, displayValue } from "@/lib/table-utils";
 
 // Form validation schemas
 const spendingFormSchema = z.object({
@@ -743,12 +747,12 @@ const ManageSpending = () => {
                   <TableBody>
                     {spendings.map((spending) => (
                       <TableRow key={spending.id}>
-                        <TableCell>{format(new Date(spending.issueDate), 'PP')}</TableCell>
-                        <TableCell>{spending.description}</TableCell>
+                        <TableCell>{formatDate(spending.issueDate)}</TableCell>
+                        <TableCell>{displayValue(spending.description)}</TableCell>
                         <TableCell>{formatCurrency(spending.amount)}</TableCell>
-                        <TableCell>{spending.categoryName || getCategoryName(spending.categoryId)}</TableCell>
+                        <TableCell>{displayValue(spending.categoryName || getCategoryName(spending.categoryId))}</TableCell>
                         <TableCell>
-                          <div className="flex space-x-2">
+                          <TableActions>
                             <Button
                               variant="outline"
                               size="icon"
@@ -780,10 +784,13 @@ const ManageSpending = () => {
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
-                          </div>
+                          </TableActions>
                         </TableCell>
                       </TableRow>
                     ))}
+                    {spendings.length === 0 && (
+                      <TableEmpty colSpan={5} message="No spending records found" />
+                    )}
                   </TableBody>
                 </Table>
               )}

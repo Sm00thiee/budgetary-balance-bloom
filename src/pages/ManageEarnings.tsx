@@ -13,6 +13,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableEmpty,
+  TableLoading,
+  TableActions
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import {
@@ -28,6 +31,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { earningsService } from "@/services/earnings.service";
 import axios, { AxiosResponse } from "axios";
+import { formatCurrency, formatDate, displayValue } from "@/lib/table-utils";
 
 // Error boundary component to catch rendering errors
 class ErrorBoundary extends Component<
@@ -357,33 +361,21 @@ const ManageEarnings = () => {
   // Render helper function to safely display data
   const renderTableContent = () => {
     if (isLoading) {
-      return (
-        <TableRow>
-          <TableCell colSpan={5} className="text-center py-4">
-            Loading...
-          </TableCell>
-        </TableRow>
-      );
+      return <TableLoading colSpan={5} />;
     }
     
     if (!Array.isArray(safeEntries) || safeEntries.length === 0) {
-      return (
-        <TableRow>
-          <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
-            No earnings records found
-          </TableCell>
-        </TableRow>
-      );
+      return <TableEmpty colSpan={5} message="No earnings records found" />;
     }
     
     return safeEntries.map((entry: any) => (
       <TableRow key={entry?.id || Math.random().toString()}>
-        <TableCell>{entry?.date ? new Date(entry.date).toLocaleDateString() : 'N/A'}</TableCell>
-        <TableCell>{entry?.description || 'N/A'}</TableCell>
-        <TableCell>${typeof entry?.amount === 'number' ? entry.amount.toFixed(2) : 'N/A'}</TableCell>
-        <TableCell>{entry?.category || 'N/A'}</TableCell>
+        <TableCell>{formatDate(entry?.date)}</TableCell>
+        <TableCell>{displayValue(entry?.description)}</TableCell>
+        <TableCell>{formatCurrency(entry?.amount)}</TableCell>
+        <TableCell>{displayValue(entry?.category)}</TableCell>
         <TableCell>
-          <div className="flex space-x-2">
+          <TableActions>
             <Button
               variant="outline"
               size="icon"
@@ -405,7 +397,7 @@ const ManageEarnings = () => {
             >
               <Trash2 className="h-4 w-4" />
             </Button>
-          </div>
+          </TableActions>
         </TableCell>
       </TableRow>
     ));

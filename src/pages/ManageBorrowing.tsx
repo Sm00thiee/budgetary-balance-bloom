@@ -14,6 +14,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableEmpty,
+  TableLoading,
+  TableActions
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import {
@@ -47,13 +50,15 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { format, isValid, parseISO } from "date-fns";
+import { formatCurrency, formatDate, displayValue } from "@/lib/table-utils";
 
 // Status codes
 enum BorrowingStatus {
   Active = 0,
   Completed = 1,
   Defaulted = 2,
-  Renegotiated = 3
+  Renegotiated = 3,
+  Overdue = 4
 }
 
 // Helper function to convert status number to string
@@ -76,6 +81,8 @@ const getStatusText = (status: number | null | undefined): string => {
       return "Defaulted";
     case BorrowingStatus.Renegotiated:
       return "Renegotiated";
+    case BorrowingStatus.Overdue:
+      return "Overdue";
     default:
       console.warn(`Invalid status value received: ${status}`);
       return "Unknown";
@@ -101,6 +108,8 @@ const getStatusBadgeVariant = (status: number | null | undefined): "default" | "
       return "destructive";
     case BorrowingStatus.Renegotiated:
       return "outline";
+    case BorrowingStatus.Overdue:
+      return "destructive";
     default:
       return "default";
   }
@@ -119,7 +128,7 @@ const isValidBorrowingStatus = (status: any): boolean => {
   const statusNum = Number(status);
   return !isNaN(statusNum) && 
          statusNum >= 0 && 
-         statusNum <= Object.keys(BorrowingStatus).length / 2 - 1;
+         statusNum <= Object.keys(BorrowingStatus).length / 2;
 };
 
 const ManageBorrowing = () => {
@@ -551,6 +560,7 @@ const ManageBorrowing = () => {
                       <SelectItem value="1">Completed</SelectItem>
                       <SelectItem value="2">Defaulted</SelectItem>
                       <SelectItem value="3">Renegotiated</SelectItem>
+                      <SelectItem value="4">Overdue</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -623,44 +633,44 @@ const ManageBorrowing = () => {
               </TableHeader>
               <TableBody>
                 {entries.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center py-4 text-muted-foreground">
-                      No borrowing records found
-                    </TableCell>
-                  </TableRow>
-                ) : (
+                  <TableEmpty colSpan={9} message="No borrowing records found" />
+                ) :
                   entries.map((entry) => (
                     <TableRow key={entry.id}>
-                      <TableCell>{safeFormatDate(entry.date)}</TableCell>
-                      <TableCell>{entry.lenderName}</TableCell>
-                      <TableCell>{entry.description}</TableCell>
-                      <TableCell>${entry.amount.toFixed(2)}</TableCell>
+                      <TableCell>{formatDate(entry.date)}</TableCell>
+                      <TableCell>{displayValue(entry.lenderName)}</TableCell>
+                      <TableCell>{displayValue(entry.description)}</TableCell>
+                      <TableCell>{formatCurrency(entry.amount)}</TableCell>
                       <TableCell>{entry.interestRate.toFixed(1)}%</TableCell>
-                      <TableCell>{safeFormatDate(entry.dueDate)}</TableCell>
+                      <TableCell>{formatDate(entry.dueDate)}</TableCell>
                       <TableCell>
-                        <Badge variant={getStatusBadgeVariant(entry.status)}>
+                        <Badge 
+                          variant={getStatusBadgeVariant(entry.status)}
+                          className={entry.isOverdue ? "bg-red-500" : ""}
+                        >
                           {isValidBorrowingStatus(entry.status) 
                             ? getStatusText(entry.status) 
                             : `Unknown (${entry.status})`}
+                          {entry.isOverdue && " (Overdue)"}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-2">
                           <div className="text-sm">
-                            Repaid: ${entry.amountRepaid?.toFixed(2) || "0.00"}
+                            Repaid: {formatCurrency(entry.amountRepaid || 0)}
                           </div>
                           <div className="text-sm">
-                            Remaining: ${entry.remainingAmount?.toFixed(2) || entry.amount.toFixed(2)}
+                            Remaining: {formatCurrency(entry.remainingAmount || entry.amount)}
                           </div>
                           {entry.lastRepaymentDate && (
                             <div className="text-xs text-muted-foreground">
-                              Last payment: {format(new Date(entry.lastRepaymentDate), "MMM dd, yyyy")}
+                              Last payment: {formatDate(entry.lastRepaymentDate)}
                             </div>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex space-x-2">
+                        <TableActions>
                           {entry.status === BorrowingStatus.Active && (
                             <Button
                               variant="outline"
@@ -687,11 +697,11 @@ const ManageBorrowing = () => {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                        </div>
+                        </TableActions>
                       </TableCell>
                     </TableRow>
                   ))
-                )}
+                }
               </TableBody>
             </Table>
             

@@ -1,4 +1,3 @@
-
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -103,6 +102,41 @@ const TableCaption = React.forwardRef<
 ))
 TableCaption.displayName = "TableCaption"
 
+// Helper component for empty state
+const TableEmpty = React.forwardRef<
+  HTMLTableRowElement,
+  React.HTMLAttributes<HTMLTableRowElement> & { colSpan: number; message?: string }
+>(({ className, colSpan, message = "No records found", ...props }, ref) => (
+  <TableRow ref={ref} className={cn("", className)} {...props}>
+    <TableCell colSpan={colSpan} className="text-center py-6 text-muted-foreground">
+      {message}
+    </TableCell>
+  </TableRow>
+))
+TableEmpty.displayName = "TableEmpty"
+
+// Helper component for loading state
+const TableLoading = React.forwardRef<
+  HTMLTableRowElement,
+  React.HTMLAttributes<HTMLTableRowElement> & { colSpan: number; message?: string }
+>(({ className, colSpan, message = "Loading...", ...props }, ref) => (
+  <TableRow ref={ref} className={cn("", className)} {...props}>
+    <TableCell colSpan={colSpan} className="text-center py-6">
+      {message}
+    </TableCell>
+  </TableRow>
+))
+TableLoading.displayName = "TableLoading"
+
+// Helper component for actions cell with consistent styling
+const TableActions = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("flex items-center space-x-2", className)} {...props} />
+))
+TableActions.displayName = "TableActions"
+
 export {
   Table,
   TableHeader,
@@ -112,4 +146,7 @@ export {
   TableRow,
   TableCell,
   TableCaption,
+  TableEmpty,
+  TableLoading,
+  TableActions,
 }

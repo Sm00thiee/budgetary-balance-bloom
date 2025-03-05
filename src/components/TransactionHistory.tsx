@@ -1,5 +1,5 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { format } from "date-fns";
+import { formatCurrency, formatDate, displayValue } from "@/lib/table-utils";
 
 interface Transaction {
   id: string;
@@ -30,18 +30,18 @@ export const TransactionHistory = ({ transactions }: TransactionHistoryProps) =>
             >
               <div className="space-y-1">
                 <p className="text-sm font-medium leading-none">
-                  {transaction.description}
+                  {displayValue(transaction.description)}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {format(new Date(transaction.date), "MMM d, yyyy")}
+                  {formatDate(transaction.date)}
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <div className="text-sm font-medium">
-                  ${transaction.amount.toFixed(2)}
+                  {formatCurrency(transaction.amount)}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {transaction.type}
+                  {displayValue(transaction.type)}
                 </div>
               </div>
             </div>
