@@ -1,5 +1,5 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { format } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 
 interface Transaction {
   id: string;
@@ -13,6 +13,19 @@ interface Transaction {
 interface TransactionHistoryProps {
   transactions: Transaction[];
 }
+
+// Helper function to safely format dates
+const safeFormatDate = (dateString: string | undefined | null): string => {
+  if (!dateString) return "N/A";
+  
+  try {
+    const date = parseISO(dateString);
+    return isValid(date) ? format(date, "MMM d, yyyy") : "N/A";
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return "N/A";
+  }
+};
 
 export const TransactionHistory = ({ transactions }: TransactionHistoryProps) => {
   return (
@@ -33,7 +46,7 @@ export const TransactionHistory = ({ transactions }: TransactionHistoryProps) =>
                   {transaction.description}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {format(new Date(transaction.date), "MMM d, yyyy")}
+                  {safeFormatDate(transaction.date)}
                 </p>
               </div>
               <div className="flex items-center gap-2">

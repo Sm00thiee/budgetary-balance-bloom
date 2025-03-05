@@ -1,5 +1,5 @@
 export const API_CONFIG = {
-  baseUrl: import.meta.env.VITE_API_BASE_URL || "http://localhost:5193",
+  baseUrl: import.meta.env.VITE_API_BASE_URL || "https://localhost:81",
   useMockData: false,
   endpoints: {
     earnings: {

@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    # Example of environment variables if needed for runtime configuration
+    # environment:
+    #   - API_URL=https://api.example.com
+    # volumes:
+    #   - ./config.js:/usr/share/nginx/html/config.js 

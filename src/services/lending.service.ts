@@ -1,13 +1,5 @@
-import axios from 'axios';
-
-// Create axios instance with default config
-const api = axios.create({
-  baseURL: 'http://localhost:5193/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true // Enable sending cookies in cross-origin requests
-});
+import { api, formatUrl } from './api';
+import { API_CONFIG } from '@/config/api.config';
 
 // DTOs and Interfaces
 export interface LendingDto {
@@ -98,48 +90,48 @@ export interface PaginatedResponse<T> {
 export type Lending = LendingDto;
 
 class LendingService {
-  private readonly baseUrl = '/lendings';
+  private readonly baseUrl = API_CONFIG.endpoints.lending.find.replace('/find', '');
 
   async create(lending: CreateLendingRequestDto): Promise<string> {
-    const response = await api.post(this.baseUrl, lending);
+    const response = await api.post(API_CONFIG.endpoints.lending.create, lending);
     return response.data;
   }
 
   async getAll(params: GetLendingRequestDto): Promise<PaginatedResponse<Lending>> {
-    const response = await api.post(`${this.baseUrl}/find`, params);
+    const response = await api.post(API_CONFIG.endpoints.lending.find, params);
     return response.data;
   }
 
   async getById(id: string): Promise<Lending> {
-    const response = await api.get(`${this.baseUrl}/${id}`);
+    const response = await api.get(formatUrl(API_CONFIG.endpoints.lending.getById, { id }));
     return response.data;
   }
 
   async update(id: string, lending: UpdateLendingRequestDto): Promise<void> {
-    await api.patch(`${this.baseUrl}/${id}`, lending);
+    await api.patch(formatUrl(API_CONFIG.endpoints.lending.update, { id }), lending);
   }
 
   async delete(id: string): Promise<void> {
-    await api.delete(`${this.baseUrl}/${id}`);
+    await api.delete(formatUrl(API_CONFIG.endpoints.lending.delete, { id }));
   }
 
   async recordPayment(id: string, payment: RecordRepaymentRequestDto): Promise<number> {
-    const response = await api.post(`${this.baseUrl}/${id}/repayments`, payment);
+    const response = await api.post(formatUrl(API_CONFIG.endpoints.lending.recordPayment, { id }), payment);
     return response.data;
   }
 
   async updateStatus(id: string, status: ChangeLendingStatusDto): Promise<Lending> {
-    const response = await api.patch(`${this.baseUrl}/${id}/status`, status);
+    const response = await api.patch(formatUrl(API_CONFIG.endpoints.lending.updateStatus, { id }), status);
     return response.data;
   }
 
   async getSummary(): Promise<LendingSummary> {
-    const response = await api.get(`${this.baseUrl}/summary`);
+    const response = await api.get(API_CONFIG.endpoints.lending.summary);
     return response.data;
   }
 
   async getOverdue(): Promise<Lending[]> {
-    const response = await api.get(`${this.baseUrl}/overdue`);
+    const response = await api.get(API_CONFIG.endpoints.lending.overdue);
     return response.data;
   }
 
