@@ -39,13 +39,14 @@ export const API_CONFIG = {
     spending: {
       list: "/api/spendings/getRecords",
       create: "/api/spendings/create",
-      update: "/api/spendings/update",
+      update: "/api/spendings/update/:id",
       delete: "/api/spendings/delete",
       categories: "/api/spendings/categories",
     },
     dashboard: {
       summary: "/api/dashboard/summary",
       transactions: "/api/dashboard/transactions",
+      spendingTransactions: "/api/dashboard/spending-transactions",
       chart: "/api/dashboard/chart",
     },
     auth: {

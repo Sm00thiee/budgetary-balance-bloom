@@ -20,6 +20,19 @@ export interface Transaction {
   category?: string;
 }
 
+export interface SpendingTransactionsResponse {
+  transactions: Transaction[];
+  summary: {
+    totalAmount: number;
+    transactionCount: number;
+    categories: Array<{
+      category: string;
+      total: number;
+      count: number;
+    }>;
+  };
+}
+
 export interface ChartData {
   yearMonth: string;
   name: string;
@@ -35,8 +48,43 @@ export const dashboardService = {
   getSummary: () =>
     apiService.get<DashboardSummary>(API_CONFIG.endpoints.dashboard.summary),
 
-  getTransactions: () =>
-    apiService.get<Transaction[]>(API_CONFIG.endpoints.dashboard.transactions),
+  getTransactions: async () => {
+    console.log("Fetching transactions from API");
+    try {
+      const data = await apiService.get<Transaction[]>(
+        API_CONFIG.endpoints.dashboard.transactions
+      );
+      console.log("Transactions received:", data);
+
+      // Log transaction types distribution
+      if (Array.isArray(data)) {
+        const earningsCount = data.filter((t) => t.type === "Earning").length;
+        const spendingCount = data.filter((t) => t.type === "Spending").length;
+        console.log(
+          `Transaction breakdown - Earnings: ${earningsCount}, Spending: ${spendingCount}, Total: ${data.length}`
+        );
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      throw error;
+    }
+  },
+
+  getSpendingTransactions: async () => {
+    console.log("Fetching spending transactions from API");
+    try {
+      const data = await apiService.get<SpendingTransactionsResponse>(
+        API_CONFIG.endpoints.dashboard.spendingTransactions
+      );
+      console.log("Spending transactions received:", data);
+      return data;
+    } catch (error) {
+      console.error("Error fetching spending transactions:", error);
+      throw error;
+    }
+  },
 
   getChartData: (params?: {
     startDate?: Date;

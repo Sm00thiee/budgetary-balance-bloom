@@ -213,50 +213,6 @@ const Index = () => {
           </SummaryCard>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <InsightCard
-            title="Spending Breakdown"
-            value={summaryData?.monthlySpending || 0}
-            target={monthlyBudget || 3000}
-            status={summaryData?.monthlySpending > monthlyBudget ? 'warning' : 'positive'}
-            insights={
-              spendingBreakdown.length > 0 
-                ? spendingBreakdown.map(item => `${item.category}: ${item.percentage}% of expenses`)
-                : ["No spending data available"]
-            }
-            onClick={() => navigate("/manage-spending")}
-            className="bg-gray-50 dark:bg-gray-900"
-          />
-          
-          <InsightCard
-            title="Savings Goal"
-            value={summaryData?.totalSavings || 0}
-            target={10000}
-            status={summaryData?.totalSavings > 5000 ? 'positive' : 'neutral'}
-            insights={[
-              "Emergency fund: 70% complete",
-              "Vacation savings: 30% complete",
-              "Rate of saving: $400/month"
-            ]}
-            onClick={() => navigate("/manage-savings")}
-            className="bg-gray-50 dark:bg-gray-900"
-          />
-          
-          <InsightCard
-            title="Debt Overview"
-            value={summaryData?.activeBorrowings || 0}
-            target={5000}
-            status={summaryData?.activeBorrowings > 3000 ? 'negative' : 'positive'}
-            insights={[
-              `Debt-to-income ratio: ${summaryData?.monthlyEarnings ? Math.round((summaryData.activeBorrowings / summaryData.monthlyEarnings) * 100) : 0}%`,
-              "Next payment due in 15 days",
-              "Interest paid YTD: $320"
-            ]}
-            onClick={() => navigate("/manage-borrowing")}
-            className="bg-gray-50 dark:bg-gray-900"
-          />
-        </div>
-
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
           <div className="md:col-span-4">
             <Card>
@@ -305,7 +261,9 @@ const Index = () => {
           <div className="md:col-span-3 lg:col-span-3">
             <Card>
               <CardHeader>
-                <CardTitle>Recent Transactions</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Recent Transactions</span>
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 {transactions && transactions.length > 0 ? (

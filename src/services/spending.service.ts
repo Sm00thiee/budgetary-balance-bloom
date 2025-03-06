@@ -148,14 +148,52 @@ export const spendingService = {
   update: async (data: UpdateSpendingRequest) => {
     try {
       console.log("Updating spending record:", data);
-      const response = await api.put(
-        API_CONFIG.endpoints.spending.update,
-        data
+
+      // Basic client-side validation
+      if (
+        !data.id ||
+        typeof data.id !== "number" ||
+        data.id <= 0 ||
+        !Number.isInteger(data.id)
+      ) {
+        console.error("Invalid ID detected:", data.id);
+        throw new Error(
+          `Cannot update a record with an invalid ID: ${data.id}`
+        );
+      }
+
+      // Extract id from data to use in URL
+      const { id, ...updateData } = data;
+
+      // Replace :id in the URL with the actual ID
+      const updateUrl = API_CONFIG.endpoints.spending.update.replace(
+        ":id",
+        id.toString()
       );
+      console.log(`Using endpoint: ${updateUrl}`);
+
+      const response = await api.put(updateUrl, updateData);
       console.log("Update spending response:", response);
       return response;
     } catch (error) {
       console.error("Error updating spending record:", error);
+
+      // Enhanced error handling
+      if (error.response) {
+        console.error("Error response data:", error.response.data);
+        console.error("Error response status:", error.response.status);
+
+        // Format error message based on response
+        let errorMessage =
+          "Failed to update spending record. Please try again.";
+
+        if (error.response.data && error.response.data.description) {
+          errorMessage = error.response.data.description;
+        }
+
+        throw new Error(errorMessage);
+      }
+
       throw new Error("Failed to update spending record. Please try again.");
     }
   },

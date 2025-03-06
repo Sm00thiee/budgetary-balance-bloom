@@ -415,60 +415,6 @@ const ManageBorrowing = () => {
           </div>
         </div>
 
-        {/* Summary Cards */}
-        {summary && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Active Borrowings
-                </CardTitle>
-                <CardDescription>
-                  Money you've borrowed that still needs to be repaid
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">${(summary?.totalActiveAmount ?? 0).toFixed(2)}</div>
-                <p className="text-xs text-muted-foreground">
-                  {summary?.activeCount ?? 0} active borrowings
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Overdue Borrowings
-                </CardTitle>
-                <CardDescription>
-                  Money that's past the due date
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">${(summary?.totalOverdueAmount ?? 0).toFixed(2)}</div>
-                <p className="text-xs text-muted-foreground">
-                  {summary?.overdueCount ?? 0} overdue borrowings
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Completed Borrowings
-                </CardTitle>
-                <CardDescription>
-                  Money that has been fully repaid
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">${(summary?.totalCompletedAmount ?? 0).toFixed(2)}</div>
-                <p className="text-xs text-muted-foreground">
-                  {summary?.completedCount ?? 0} completed borrowings
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
         {/* New/Edit Loan Form */}
         <Card>
           <CardHeader>

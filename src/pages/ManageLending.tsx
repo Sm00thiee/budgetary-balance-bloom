@@ -484,66 +484,6 @@ const ManageLending = () => {
           </div>
         </div>
 
-        {/* Summary Cards */}
-        {summary && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Active Loans
-                </CardTitle>
-                <CardDescription>
-                  Money you've lent that's still being repaid
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  ${(summary?.totalActiveAmount ?? 0).toFixed(2)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {summary?.activeCount ?? 0} active loans
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Overdue Loans
-                </CardTitle>
-                <CardDescription>
-                  Money that's past the due date
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  ${(summary?.totalOverdueAmount ?? 0).toFixed(2)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {summary?.overdueCount ?? 0} overdue loans
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Completed Loans
-                </CardTitle>
-                <CardDescription>
-                  Money that has been fully repaid
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  ${(summary?.totalCompletedAmount ?? 0).toFixed(2)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {summary?.completedCount ?? 0} completed loans
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
         {/* New/Edit Loan Form */}
         <Card>
           <CardHeader>
