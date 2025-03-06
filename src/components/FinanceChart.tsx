@@ -32,9 +32,6 @@ interface FinanceChartProps {
 }
 
 export const FinanceChart = ({ title, data, lines }: FinanceChartProps) => {
-  console.log('FinanceChart received data:', data);
-  console.log('FinanceChart received lines:', lines);
-
   if (!data || data.length === 0) {
     return (
       <Card className="animate-fade-in">

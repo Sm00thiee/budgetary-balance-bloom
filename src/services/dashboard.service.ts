@@ -32,9 +32,11 @@ export interface ChartData {
 }
 
 export const dashboardService = {
-  getSummary: () => apiService.get<DashboardSummary>(API_CONFIG.endpoints.dashboard.summary),
+  getSummary: () =>
+    apiService.get<DashboardSummary>(API_CONFIG.endpoints.dashboard.summary),
 
-  getTransactions: () => apiService.get<Transaction[]>(API_CONFIG.endpoints.dashboard.transactions),
+  getTransactions: () =>
+    apiService.get<Transaction[]>(API_CONFIG.endpoints.dashboard.transactions),
 
   getChartData: (params?: {
     startDate?: Date;

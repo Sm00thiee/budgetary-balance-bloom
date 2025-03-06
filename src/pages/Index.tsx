@@ -53,7 +53,46 @@ const Index = () => {
     }));
   }, [chartData]);
 
-  console.log('Processed Chart Data:', processedChartData);
+  // Calculate monthly budget based on earnings
+  const monthlyBudget = useMemo(() => {
+    if (!summaryData) return 0;
+    return summaryData.monthlyEarnings * 0.75; // 75% of monthly earnings
+  }, [summaryData]);
+
+  // Calculate budget percentage
+  const budgetPercentage = useMemo(() => {
+    if (!summaryData || !monthlyBudget || monthlyBudget === 0) return 0;
+    return Math.round((summaryData.monthlySpending / monthlyBudget) * 100);
+  }, [summaryData, monthlyBudget]);
+
+  // Format currency values
+  const formatCurrency = (value: number | undefined) => {
+    if (value === undefined) return "$0.00";
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+  };
+
+  // Calculate spending percentages by category
+  const spendingBreakdown = useMemo(() => {
+    if (!transactions) return [];
+    
+    const spendingTransactions = transactions.filter(t => t.type === 'Spending');
+    const totalSpending = spendingTransactions.reduce((sum, t) => sum + t.amount, 0);
+    
+    const categories: Record<string, number> = {};
+    spendingTransactions.forEach(t => {
+      const category = t.category || 'Other';
+      categories[category] = (categories[category] || 0) + t.amount;
+    });
+    
+    return Object.entries(categories)
+      .map(([category, amount]) => ({
+        category,
+        amount,
+        percentage: totalSpending > 0 ? Math.round((amount / totalSpending) * 100) : 0
+      }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 3);
+  }, [transactions]);
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -109,7 +148,7 @@ const Index = () => {
         <div className="grid gap-4 md:grid-cols-5">
           <SummaryCard
             title="Monthly Earnings"
-            amount={`$${summaryData?.monthlyEarnings || 0}`}
+            amount={formatCurrency(summaryData?.monthlyEarnings)}
             description="Income from all sources this month"
             trend={{ value: 5.2, isPositive: true }}
             action={{ 
@@ -122,7 +161,7 @@ const Index = () => {
           </SummaryCard>
           <SummaryCard
             title="Total Savings"
-            amount={`$${summaryData?.totalSavings || 0}`}
+            amount={formatCurrency(summaryData?.totalSavings)}
             description="Accumulated savings across all accounts"
             trend={{ value: 20.1, isPositive: true }}
             action={{ 
@@ -135,7 +174,7 @@ const Index = () => {
           </SummaryCard>
           <SummaryCard
             title="Active Loans Given"
-            amount={`$${summaryData?.activeLoans || 0}`}
+            amount={formatCurrency(summaryData?.activeLoans)}
             description={`${summaryData?.lendingCount || 0} active loans`}
             trend={{ value: 12.3, isPositive: true }}
             action={{ 
@@ -148,7 +187,7 @@ const Index = () => {
           </SummaryCard>
           <SummaryCard
             title="Active Borrowings"
-            amount={`$${summaryData?.activeBorrowings || 0}`}
+            amount={formatCurrency(summaryData?.activeBorrowings)}
             description={`${summaryData?.borrowingCount || 0} active borrowings`}
             trend={{ value: 3.7, isPositive: false }}
             action={{ 
@@ -161,8 +200,8 @@ const Index = () => {
           </SummaryCard>
           <SummaryCard
             title="Monthly Spending"
-            amount={`$${summaryData?.monthlySpending || 0}`}
-            description="75% of monthly budget"
+            amount={formatCurrency(summaryData?.monthlySpending)}
+            description={`${budgetPercentage}% of monthly budget`}
             trend={{ value: 2.4, isPositive: false }}
             action={{ 
               label: "View Expenses", 
@@ -178,13 +217,13 @@ const Index = () => {
           <InsightCard
             title="Spending Breakdown"
             value={summaryData?.monthlySpending || 0}
-            target={3000}
-            status={summaryData?.monthlySpending > 3000 ? 'warning' : 'positive'}
-            insights={[
-              "Housing: 40% of expenses",
-              "Food: 20% of expenses",
-              "Transportation: 15% of expenses"
-            ]}
+            target={monthlyBudget || 3000}
+            status={summaryData?.monthlySpending > monthlyBudget ? 'warning' : 'positive'}
+            insights={
+              spendingBreakdown.length > 0 
+                ? spendingBreakdown.map(item => `${item.category}: ${item.percentage}% of expenses`)
+                : ["No spending data available"]
+            }
             onClick={() => navigate("/manage-spending")}
             className="bg-gray-50 dark:bg-gray-900"
           />
@@ -206,10 +245,10 @@ const Index = () => {
           <InsightCard
             title="Debt Overview"
             value={summaryData?.activeBorrowings || 0}
-            target={summaryData?.activeBorrowings ? summaryData?.activeBorrowings * 1.5 : 5000}
+            target={5000}
             status={summaryData?.activeBorrowings > 3000 ? 'negative' : 'positive'}
             insights={[
-              "Debt-to-income ratio: 25%",
+              `Debt-to-income ratio: ${summaryData?.monthlyEarnings ? Math.round((summaryData.activeBorrowings / summaryData.monthlyEarnings) * 100) : 0}%`,
               "Next payment due in 15 days",
               "Interest paid YTD: $320"
             ]}
@@ -248,30 +287,34 @@ const Index = () => {
                     title="Financial Overview"
                     data={processedChartData}
                     lines={[
-                      { key: "earnings", color: "#94A3B8" },
-                      { key: "savings", color: "#D1E6B8" },
-                      { key: "loans", color: "#FFB4B4" },
-                      { key: "borrowings", color: "#FFD1B8" },
-                      { key: "spending", color: "#FFE4B8" }
+                      { key: "earnings", color: "#4ade80" },
+                      { key: "savings", color: "#60a5fa" },
+                      { key: "loans", color: "#f97316" },
+                      { key: "borrowings", color: "#f43f5e" },
+                      { key: "spending", color: "#a855f7" },
                     ]}
                   />
                 ) : (
-                  <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+                  <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                     No data available for the selected period
                   </div>
                 )}
               </CardContent>
             </Card>
           </div>
-          <div className="md:col-span-3">
-            <Card className="animate-fade-in">
+          <div className="md:col-span-3 lg:col-span-3">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-sm font-medium">
-                  Recent Transactions
-                </CardTitle>
+                <CardTitle>Recent Transactions</CardTitle>
               </CardHeader>
               <CardContent>
-                <TransactionHistory transactions={transactions || []} />
+                {transactions && transactions.length > 0 ? (
+                  <TransactionHistory transactions={transactions} />
+                ) : (
+                  <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                    No recent transactions to display
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

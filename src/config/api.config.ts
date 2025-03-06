@@ -60,20 +60,4 @@ export const API_CONFIG = {
       changePassword: "/api/user/password",
     },
   },
-  dtos: {
-    savings: {
-      create: {
-        userId: 0,
-        goal: 0,
-        amount: 0,
-      },
-    },
-    spending: {
-      create: {
-        issueDate: new Date().toISOString(),
-        amount: 0,
-        description: "",
-      },
-    },
-  },
 };
