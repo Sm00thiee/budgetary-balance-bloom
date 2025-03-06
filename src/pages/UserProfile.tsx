@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,27 +16,62 @@ import { ArrowLeft, Save, Upload, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { api } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
+import { API_CONFIG } from "@/config/api.config"; 
 
 const UserProfile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { logout } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const [userInfo, setUserInfo] = useState({
-    firstName: "John",
-    lastName: "Doe",
-    email: "john@example.com",
+    name: "",
+    username: "",
+    email: "",
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
     avatar: "",
   });
 
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      setIsLoading(true);
+      const response = await api.get(API_CONFIG.endpoints.user.profile);
+      
+      setUserInfo(prev => ({
+        ...prev,
+        name: response.data.name || "",
+        username: response.data.username || "",
+        email: response.data.email || "",
+      }));
+      
+      toast({
+        title: "Success",
+        description: "Profile loaded successfully",
+      });
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load profile data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.put("/user/profile", {
-        firstName: userInfo.firstName,
-        lastName: userInfo.lastName,
+      setIsLoading(true);
+      await api.put(API_CONFIG.endpoints.user.updateProfile, {
+        name: userInfo.name,
+        username: userInfo.username,
         email: userInfo.email,
       });
       
@@ -44,12 +79,15 @@ const UserProfile = () => {
         title: "Success",
         description: "Profile updated successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Error updating profile:", error);
       toast({
         title: "Error",
-        description: "Failed to update profile",
+        description: error.response?.data?.message || "Failed to update profile",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -73,7 +111,8 @@ const UserProfile = () => {
     }
 
     try {
-      await api.put("/user/password", {
+      setIsLoading(true);
+      await api.put(API_CONFIG.endpoints.user.changePassword, {
         currentPassword: userInfo.currentPassword,
         newPassword: userInfo.newPassword,
       });
@@ -88,12 +127,15 @@ const UserProfile = () => {
         newPassword: "",
         confirmPassword: "",
       }));
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Error updating password:", error);
       toast({
         title: "Error",
-        description: "Failed to update password",
+        description: error.response?.data?.message || "Failed to update password",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -131,34 +173,34 @@ const UserProfile = () => {
               <div className="flex items-center space-x-4">
                 <Avatar className="h-20 w-20">
                   <AvatarImage src={userInfo.avatar || ""} />
-                  <AvatarFallback>{userInfo.firstName.charAt(0)}{userInfo.lastName.charAt(0)}</AvatarFallback>
+                  <AvatarFallback>{userInfo.name.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <Button type="button" variant="outline">
+                <Button type="button" variant="outline" disabled>
                   <Upload className="mr-2 h-4 w-4" />
                   Change Avatar
                 </Button>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input
-                    id="firstName"
-                    value={userInfo.firstName}
-                    onChange={(e) =>
-                      setUserInfo({ ...userInfo, firstName: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input
-                    id="lastName"
-                    value={userInfo.lastName}
-                    onChange={(e) =>
-                      setUserInfo({ ...userInfo, lastName: e.target.value })
-                    }
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  value={userInfo.name}
+                  onChange={(e) =>
+                    setUserInfo({ ...userInfo, name: e.target.value })
+                  }
+                  disabled={isLoading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  value={userInfo.username}
+                  onChange={(e) =>
+                    setUserInfo({ ...userInfo, username: e.target.value })
+                  }
+                  disabled={isLoading}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -169,11 +211,12 @@ const UserProfile = () => {
                   onChange={(e) =>
                     setUserInfo({ ...userInfo, email: e.target.value })
                   }
+                  disabled={isLoading}
                 />
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit">
+              <Button type="submit" disabled={isLoading}>
                 <Save className="mr-2 h-4 w-4" />
                 Save Changes
               </Button>
@@ -197,6 +240,7 @@ const UserProfile = () => {
                   onChange={(e) =>
                     setUserInfo({ ...userInfo, currentPassword: e.target.value })
                   }
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -208,6 +252,7 @@ const UserProfile = () => {
                   onChange={(e) =>
                     setUserInfo({ ...userInfo, newPassword: e.target.value })
                   }
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -219,11 +264,12 @@ const UserProfile = () => {
                   onChange={(e) =>
                     setUserInfo({ ...userInfo, confirmPassword: e.target.value })
                   }
+                  disabled={isLoading}
                 />
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit">
+              <Button type="submit" disabled={isLoading}>
                 <Save className="mr-2 h-4 w-4" />
                 Update Password
               </Button>
