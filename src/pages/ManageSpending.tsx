@@ -366,44 +366,55 @@ const ManageSpending = () => {
       if (!data) return [];
       
       // Handle different response formats
+      let processedData = [];
+      
       if (Array.isArray(data)) {
-        return [...data];
-      }
-      
-      // Handle Axios response format
-      const dataAny = data as any;
-      
-      if (dataAny.data !== undefined) {
-        if (Array.isArray(dataAny.data)) {
-          return [...dataAny.data];
-        } else if (dataAny.data && typeof dataAny.data === 'object') {
-          // Check for items in the data object
-          if (dataAny.data.items && Array.isArray(dataAny.data.items)) {
-            return [...dataAny.data.items];
-          } else {
-            // Look for any array in the data object
-            const arrayInData = Object.values(dataAny.data).find(val => Array.isArray(val));
-            if (arrayInData) {
-              return [...arrayInData];
+        processedData = [...data];
+      } else {
+        // Handle Axios response format
+        const dataAny = data as any;
+        
+        if (dataAny.data !== undefined) {
+          if (Array.isArray(dataAny.data)) {
+            processedData = [...dataAny.data];
+          } else if (dataAny.data && typeof dataAny.data === 'object') {
+            // Check for items in the data object
+            if (dataAny.data.items && Array.isArray(dataAny.data.items)) {
+              processedData = [...dataAny.data.items];
+            } else {
+              // Look for any array in the data object
+              const arrayInData = Object.values(dataAny.data).find(val => Array.isArray(val));
+              if (arrayInData) {
+                processedData = [...arrayInData];
+              }
             }
           }
         }
-      }
-      // Check for items directly in the response
-      else if (dataAny.items && Array.isArray(dataAny.items)) {
-        return [...dataAny.items];
-      }
-      // Last resort - look for any array in the object
-      else if (typeof dataAny === 'object') {
-        const arrayValues = Object.values(dataAny).find(val => Array.isArray(val));
-        if (arrayValues) {
-          return [...arrayValues];
+        // Check for items directly in the response
+        else if (dataAny.items && Array.isArray(dataAny.items)) {
+          processedData = [...dataAny.items];
+        }
+        // Last resort - look for any array in the object
+        else if (typeof dataAny === 'object') {
+          const arrayValues = Object.values(dataAny).find(val => Array.isArray(val));
+          if (arrayValues) {
+            processedData = [...arrayValues];
+          }
         }
       }
       
-      // Return empty array as fallback
-      console.warn('Could not extract spendings array from response data:', data);
-      return [];
+      // Debug: Check for invalid IDs in the data
+      const invalidRecords = processedData.filter(record => !record.id || record.id === 0);
+      if (invalidRecords.length > 0) {
+        console.warn('Found records with invalid IDs:', invalidRecords);
+      }
+      
+      // Return processed data with validation
+      return processedData.map(record => ({
+        ...record,
+        id: record.id || 0, // Ensure ID is always a number
+        validId: !!record.id && record.id > 0 // Add flag for valid ID
+      }));
     } catch (err) {
       console.error('Error processing spendings data:', err);
       return [];
@@ -746,7 +757,7 @@ const ManageSpending = () => {
                   </TableHeader>
                   <TableBody>
                     {spendings.map((spending) => (
-                      <TableRow key={spending.id}>
+                      <TableRow key={spending.id || Math.random()}>
                         <TableCell>{formatDate(spending.issueDate)}</TableCell>
                         <TableCell>{displayValue(spending.description)}</TableCell>
                         <TableCell>{formatCurrency(spending.amount)}</TableCell>

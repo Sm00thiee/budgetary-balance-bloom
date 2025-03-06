@@ -29,7 +29,7 @@ import {
 import { Pencil, Trash2, ArrowLeft, DollarSign, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { borrowingService, Borrowing, BorrowingSummary } from "@/services/borrowing.service";
+import { borrowingService, Borrowing, BorrowingSummary, UpdateBorrowingRequestDto } from "@/services/borrowing.service";
 import {
   Pagination,
   PaginationContent,
@@ -215,32 +215,56 @@ const ManageBorrowing = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentEntry.lenderName || !currentEntry.description || !currentEntry.amount || !currentEntry.dueDate || currentEntry.interestRate === undefined) {
+    
+    if (!currentEntry.lenderName) {
       toast({
         title: "Error",
-        description: "Please fill in all fields",
+        description: "Lender name is required",
         variant: "destructive",
       });
       return;
     }
-
+    
+    if (!currentEntry.amount || isNaN(Number(currentEntry.amount)) || Number(currentEntry.amount) <= 0) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid amount",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       if (isEditing && currentEntry.id) {
-        await borrowingService.update(currentEntry.id, currentEntry as Borrowing);
+        // Update existing borrowing
+        await borrowingService.update(currentEntry.id, {
+          lenderName: currentEntry.lenderName,
+          description: currentEntry.description || '',
+          amount: Number(currentEntry.amount),
+          interestRate: Number(currentEntry.interestRate) || 0,
+          status: currentEntry.status !== undefined ? String(currentEntry.status) : '0',
+          dueDate: currentEntry.dueDate || '',
+          date: currentEntry.date || format(new Date(), 'yyyy-MM-dd'),
+        });
+        
         toast({
           title: "Success",
-          description: "Loan entry updated successfully",
+          description: "Borrowing updated successfully",
         });
       } else {
-        const newBorrowing = {
-          ...currentEntry as Borrowing,
-          date: new Date().toISOString().split('T')[0],
-          status: BorrowingStatus.Active,
-        };
-        await borrowingService.create(newBorrowing);
+        // Create new borrowing
+        await borrowingService.create({
+          lenderName: currentEntry.lenderName!,
+          description: currentEntry.description || '',
+          amount: Number(currentEntry.amount),
+          interestRate: Number(currentEntry.interestRate) || 0,
+          dueDate: currentEntry.dueDate || '',
+          date: format(new Date(), 'yyyy-MM-dd'),
+        });
+        
         toast({
           title: "Success",
-          description: "Loan entry added successfully",
+          description: "New borrowing created successfully",
         });
       }
       
@@ -252,9 +276,10 @@ const ManageBorrowing = () => {
       setCurrentEntry({});
       setIsEditing(false);
     } catch (error) {
+      console.error("Error submitting form:", error);
       toast({
         title: "Error",
-        description: "Failed to save borrowing entry",
+        description: "Failed to save borrowing data",
         variant: "destructive",
       });
     }

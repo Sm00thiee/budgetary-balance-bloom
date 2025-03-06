@@ -53,9 +53,22 @@ export interface BorrowingSummary {
   countByStatus: Record<string, number>;
 }
 
+export interface UpdateBorrowingRequestDto {
+  lenderName: string;
+  description: string;
+  amount: number;
+  interestRate: number;
+  status?: string;
+  dueDate: string;
+  date: string;
+}
+
 export const borrowingService = {
   getAll: (params?: GetBorrowingRequestDto) =>
-    apiService.post<{ items: Borrowing[]; total: number }>(API_CONFIG.endpoints.borrowing.find, params),
+    apiService.post<{ items: Borrowing[]; total: number }>(
+      API_CONFIG.endpoints.borrowing.find,
+      params
+    ),
 
   create: (data: {
     lenderName: string;
@@ -67,29 +80,29 @@ export const borrowingService = {
     status?: number;
   }) => apiService.post<string>(API_CONFIG.endpoints.borrowing.create, data),
 
-  update: (
-    id: string,
-    data: {
-      lenderName?: string;
-      description?: string;
-      amount?: number;
-      date?: string;
-      dueDate?: string;
-      interestRate?: number;
-      status?: number;
-    }
-  ) => apiService.put<void>(API_CONFIG.endpoints.borrowing.update.replace(":id", id), data),
+  update: (id: string, borrowing: UpdateBorrowingRequestDto): Promise<void> =>
+    apiService.put<void>(
+      API_CONFIG.endpoints.borrowing.update.replace(":id", id),
+      borrowing
+    ),
 
   getById: (id: string) =>
-    apiService.get<Borrowing>(API_CONFIG.endpoints.borrowing.getById.replace(":id", id)),
+    apiService.get<Borrowing>(
+      API_CONFIG.endpoints.borrowing.getById.replace(":id", id)
+    ),
 
   updateStatus: (id: string, status: number) =>
-    apiService.put<void>(API_CONFIG.endpoints.borrowing.updateStatus.replace(":id", id), {
-      status,
-    }),
+    apiService.put<void>(
+      API_CONFIG.endpoints.borrowing.updateStatus.replace(":id", id),
+      {
+        status,
+      }
+    ),
 
   delete: (id: string) =>
-    apiService.delete<void>(API_CONFIG.endpoints.borrowing.delete.replace(":id", id)),
+    apiService.delete<void>(
+      API_CONFIG.endpoints.borrowing.delete.replace(":id", id)
+    ),
 
   recordPayment: (id: string, data: { amount: number; note?: string }) =>
     apiService.post<number>(
@@ -97,7 +110,9 @@ export const borrowingService = {
       data
     ),
 
-  getSummary: () => apiService.get<BorrowingSummary>(API_CONFIG.endpoints.borrowing.summary),
+  getSummary: () =>
+    apiService.get<BorrowingSummary>(API_CONFIG.endpoints.borrowing.summary),
 
-  getOverdue: () => apiService.get<Borrowing[]>(API_CONFIG.endpoints.borrowing.overdue),
+  getOverdue: () =>
+    apiService.get<Borrowing[]>(API_CONFIG.endpoints.borrowing.overdue),
 };

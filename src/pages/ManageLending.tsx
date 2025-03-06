@@ -67,7 +67,7 @@ enum LendingStatus {
 }
 
 // Helper function to check if a value is a valid LendingStatus
-const isValidLendingStatus = (status: any): boolean => {
+const isValidLendingStatus = (status: number | string | null | undefined): boolean => {
   const statusNum = Number(status);
   return !isNaN(statusNum) && 
          statusNum >= 1 && 
@@ -122,9 +122,21 @@ const getStatusBadgeVariant = (status: number | null | undefined): "default" | "
 
 // Helper function to safely parse dates
 const parseSafeDate = (dateString: string | undefined): Date | undefined => {
-  if (!dateString) return undefined;
+  if (!dateString) {
+    console.log("parseSafeDate: No date string provided");
+    return undefined;
+  }
+  
+  console.log(`parseSafeDate: Parsing date string: "${dateString}"`);
   const date = new Date(dateString);
-  return isNaN(date.getTime()) ? undefined : date;
+  
+  if (isNaN(date.getTime())) {
+    console.log(`parseSafeDate: Invalid date: "${dateString}"`);
+    return undefined;
+  }
+  
+  console.log(`parseSafeDate: Successfully parsed date: ${date.toISOString()}`);
+  return date;
 };
 
 // Helper function to safely format dates
@@ -162,10 +174,21 @@ const ManageLending = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   // Editing or adding a new entry
-  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [isAddingNew, setIsAddingNew] = useState(true);
 
   const fetchLendings = async () => {
     try {
+      console.log("Fetching lendings with params:", {
+        pageNumber: currentPage,
+        itemsPerPage,
+        borrowName: searchTerm || undefined,
+        status: statusFilter !== "" ? Number(statusFilter) : undefined,
+        fromDate: parseSafeDate(fromDate),
+        toDate: parseSafeDate(toDate),
+        minAmount: minAmount !== "" ? Number(minAmount) : undefined,
+        maxAmount: maxAmount !== "" ? Number(maxAmount) : undefined
+      });
+
       const response = await lendingService.getAll({
         pageNumber: currentPage,
         itemsPerPage: itemsPerPage,
@@ -180,6 +203,38 @@ const ManageLending = () => {
       });
       
       console.log("API Response:", response);
+      console.log("Response items:", response.items);
+      console.log("Response total:", response.total);
+      
+      // Check if we have a valid response structure
+      if (!response || typeof response !== 'object') {
+        console.error("Invalid response structure:", response);
+        toast({
+          title: "Error",
+          description: "Received invalid data format from the server",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Check if response.items exists and is an array
+      if (!Array.isArray(response.items)) {
+        console.error("Response.items is not an array:", response.items);
+        
+        // Try to determine what happened
+        if (response.items === undefined) {
+          console.error("Response.items is undefined");
+        } else if (response.items === null) {
+          console.error("Response.items is null");
+        } else {
+          console.error("Response.items is of type:", typeof response.items);
+        }
+        
+        // Create an empty array to prevent errors
+        setEntries([]);
+        setTotalItems(0);
+        return;
+      }
       
       // Process the entries to ensure status is correctly handled
       const processedItems = response.items?.map(item => ({
@@ -250,7 +305,7 @@ const ManageLending = () => {
           amount: Number(currentEntry.amount),
           interestRate: Number(currentEntry.interestRate) || 0,
           dueDate: currentEntry.dueDate || '',
-          date: currentEntry.date || format(new Date(), 'yyyy-MM-dd'),
+          date: format(new Date(), 'yyyy-MM-dd'),
         });
         
         toast({
@@ -396,7 +451,6 @@ const ManageLending = () => {
       amount: 0,
       interestRate: 0,
       dueDate: "",
-      date: format(new Date(), 'yyyy-MM-dd'),
     });
   };
 
@@ -493,16 +547,6 @@ const ManageLending = () => {
                       placeholder="Enter borrower name"
                       value={currentEntry.borrowName || ""}
                       onChange={(e) => setCurrentEntry({...currentEntry, borrowName: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="date">Date</Label>
-                    <Input
-                      id="date"
-                      type="date"
-                      value={currentEntry.date ? format(new Date(currentEntry.date), "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd")}
-                      onChange={(e) => setCurrentEntry({...currentEntry, date: e.target.value})}
                     />
                   </div>
                   
@@ -689,7 +733,7 @@ const ManageLending = () => {
                   entries.map((entry) => (
                     <TableRow key={entry.id}>
                       <TableCell>{displayValue(entry.borrowName)}</TableCell>
-                      <TableCell>{formatDate(entry.date)}</TableCell>
+                      <TableCell>{formatDate(entry.date || entry.createdDate)}</TableCell>
                       <TableCell>{formatDate(entry.dueDate)}</TableCell>
                       <TableCell>{formatCurrency(entry.amount)}</TableCell>
                       <TableCell>{entry.interestRate.toFixed(1)}%</TableCell>
