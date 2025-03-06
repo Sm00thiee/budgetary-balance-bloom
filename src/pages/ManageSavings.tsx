@@ -56,6 +56,7 @@ import { API_CONFIG } from "@/config/api.config";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 // Form validation schemas
 const savingsFormSchema = z.object({
@@ -83,6 +84,8 @@ const ManageSavings = () => {
   const [isDepositDialogOpen, setIsDepositDialogOpen] = useState(false);
   const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
   const [currentSaving, setCurrentSaving] = useState<Saving | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [savingToDelete, setSavingToDelete] = useState<number | null>(null);
   
   // Forms
   const savingsForm = useForm<SavingsFormValues>({
@@ -349,12 +352,15 @@ const ManageSavings = () => {
   };
 
   const handleDelete = (id: number) => {
-    console.log(`Attempting to delete savings account with ID: ${id}`);
-    toast({
-      title: "Processing",
-      description: "Deleting savings account...",
-    });
-    deleteSavingsMutation.mutate(id);
+    // Instead of immediately deleting, set the saving to delete and open the confirmation dialog
+    setSavingToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (savingToDelete !== null) {
+      deleteSavingsMutation.mutate(savingToDelete);
+    }
   };
 
   // Open edit dialog and set form values
@@ -789,6 +795,18 @@ const ManageSavings = () => {
             </Form>
           </DialogContent>
         </Dialog>
+
+        {/* Add the confirmation dialog */}
+        <ConfirmDialog 
+          isOpen={deleteConfirmOpen}
+          onClose={() => setDeleteConfirmOpen(false)}
+          onConfirm={confirmDelete}
+          title="Confirm Deletion"
+          description="Are you sure you want to delete this savings record? This action cannot be undone."
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          confirmVariant="destructive"
+        />
       </div>
     </div>
   );

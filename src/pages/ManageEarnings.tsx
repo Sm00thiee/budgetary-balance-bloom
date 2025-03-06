@@ -110,11 +110,14 @@ const EarningsFallback = () => {
 };
 
 interface EarningsEntry {
-  id: string;
+  id: number | string;
   date: string;
   description: string;
   amount: number;
   category: string;
+  createdDate?: string;
+  lastUpdatedDate?: string;
+  userId?: number;
 }
 
 // Define the structure of API response to resolve typing issues
@@ -156,19 +159,13 @@ const ManageEarnings = () => {
     queryFn: async () => {
       try {
         const response = await earningsService.getAll();
-        console.log('Raw API response:', JSON.stringify(response));
+        console.log('Raw API response:', response);
         
-        // Log the first item to inspect its structure
-        if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
-          console.log('First earning item:', response.data[0]);
-          console.log('Date field exists:', response.data[0].hasOwnProperty('date'));
-          console.log('Date value:', response.data[0].date);
-        }
-        
+        // Direct return of the response since we're handling it in useEffect
         return response;
       } catch (err) {
         console.error('Error fetching earnings:', err);
-        return { items: [] };
+        throw err; // Let React Query handle the error
       }
     },
   });
@@ -178,59 +175,62 @@ const ManageEarnings = () => {
     console.log('Processing data:', data);
     try {
       // Default to empty array
-      let processedData: any[] = [];
+      let processedData: EarningsEntry[] = [];
       
-      // Process data based on its type and structure
+      // Check if data exists
       if (!data) {
-        processedData = [];
-      } else if (Array.isArray(data)) {
-        processedData = [...data];
-      } else {
-        // Use type guards to safely check properties
+        console.log('No data to process');
+        setSafeEntries([]);
+        return;
+      }
+      
+      // Direct handling of known API response format (from screenshot)
+      // Example: [{id: 1, createdDate: "2025-03-06T06:50:45.783886", ...}]
+      if (Array.isArray(data)) {
+        processedData = data.map(item => ({
+          id: item.id,
+          date: item.date || "",
+          description: item.description || "",
+          amount: item.amount || 0,
+          category: item.category || "",
+          createdDate: item.createdDate,
+          lastUpdatedDate: item.lastUpdatedDate,
+          userId: item.userId
+        }));
+        console.log('Processed array data:', processedData);
+      } 
+      // Handle case where data is an object containing the array
+      else if (typeof data === 'object') {
         const dataAny = data as any;
         
-        // Check if it's an Axios response with data property
-        if (dataAny.data !== undefined) {
-          if (Array.isArray(dataAny.data)) {
-            processedData = [...dataAny.data];
-          } else if (dataAny.data && typeof dataAny.data === 'object') {
-            // Check for items in the data object
-            if (dataAny.data.items && Array.isArray(dataAny.data.items)) {
-              processedData = [...dataAny.data.items];
-            } else {
-              // Look for any array in the data object
-              const arrayInData = Object.values(dataAny.data).find(val => Array.isArray(val));
-              if (arrayInData) {
-                processedData = [...arrayInData];
-              }
+        // Look for array in common properties
+        if (dataAny.data && Array.isArray(dataAny.data)) {
+          processedData = dataAny.data;
+        } else if (dataAny.items && Array.isArray(dataAny.items)) {
+          processedData = dataAny.items;
+        } else {
+          // Last resort: look for any array in the object
+          const possibleArrays = Object.values(dataAny).filter(val => Array.isArray(val));
+          if (possibleArrays.length > 0) {
+            processedData = possibleArrays[0];
+          } else {
+            // EMERGENCY FALLBACK: If we received a single object instead of an array,
+            // wrap it in an array (this happens sometimes with REST APIs)
+            if (dataAny.id) {
+              processedData = [dataAny];
+              console.log('Wrapped single object in array:', processedData);
             }
-          }
-        } 
-        // Check for items directly in the response
-        else if (dataAny.items && Array.isArray(dataAny.items)) {
-          processedData = [...dataAny.items];
-        } 
-        // Last resort - look for any array in the object
-        else if (typeof dataAny === 'object') {
-          const arrayValues = Object.values(dataAny).find(val => Array.isArray(val));
-          if (arrayValues) {
-            processedData = [...arrayValues];
           }
         }
       }
       
-      console.log('Processed data:', processedData);
+      // Final validation of processed data
+      console.log('Final processed data:', processedData);
       
-      // Log date information for the first few entries
       if (processedData.length > 0) {
-        console.log('First processed item:', processedData[0]);
-        console.log('Date field exists in processed item:', processedData[0].hasOwnProperty('date'));
-        console.log('Date value in processed item:', processedData[0].date);
-        
-        // Check if date is being properly formatted
-        if (processedData[0].date) {
-          console.log('Formatted date:', new Date(processedData[0].date).toLocaleDateString());
-        }
+        console.log('First item details:', processedData[0]);
+      } else {
+        console.log('No items in processed data');
       }
       
       setSafeEntries(processedData);
@@ -350,7 +350,29 @@ const ManageEarnings = () => {
   };
 
   const handleEdit = (entry: EarningsEntry) => {
-    setCurrentEntry(entry);
+    // Convert date format for the form input
+    let formattedDate = '';
+    if (entry.date) {
+      try {
+        // Check if it's an ISO date string with time
+        if (entry.date.includes('T')) {
+          formattedDate = entry.date.split('T')[0];
+        } else {
+          // Already in YYYY-MM-DD format
+          formattedDate = entry.date;
+        }
+      } catch (e) {
+        console.error('Error parsing date for edit:', e);
+        formattedDate = new Date().toISOString().split('T')[0];
+      }
+    } else {
+      formattedDate = new Date().toISOString().split('T')[0];
+    }
+
+    setCurrentEntry({
+      ...entry,
+      date: formattedDate
+    });
     setIsEditing(true);
   };
 
@@ -360,47 +382,56 @@ const ManageEarnings = () => {
 
   // Render helper function to safely display data
   const renderTableContent = () => {
+    console.log('Rendering table with entries:', safeEntries);
+    
     if (isLoading) {
       return <TableLoading colSpan={5} />;
     }
     
-    if (!Array.isArray(safeEntries) || safeEntries.length === 0) {
+    if (!safeEntries || !Array.isArray(safeEntries) || safeEntries.length === 0) {
       return <TableEmpty colSpan={5} message="No earnings records found" />;
     }
     
-    return safeEntries.map((entry: any) => (
-      <TableRow key={entry?.id || Math.random().toString()}>
-        <TableCell>{formatDate(entry?.date)}</TableCell>
-        <TableCell>{displayValue(entry?.description)}</TableCell>
-        <TableCell>{formatCurrency(entry?.amount)}</TableCell>
-        <TableCell>{displayValue(entry?.category)}</TableCell>
-        <TableCell>
-          <TableActions>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handleEdit({
-                id: entry?.id,
-                date: entry?.date ? entry.date : new Date().toISOString().split('T')[0],
-                description: entry?.description || '',
-                amount: typeof entry?.amount === 'number' ? entry.amount : 0,
-                category: entry?.category || ''
-              })}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handleDelete(entry?.id)}
-              disabled={deleteMutation.isPending || !entry?.id}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </TableActions>
-        </TableCell>
-      </TableRow>
-    ));
+    return safeEntries.map((entry: any) => {
+      console.log('Rendering entry:', entry);
+      
+      // Ensure we have a date - use appropriate field based on API response
+      const entryDate = entry.date || entry.createdDate;
+      
+      return (
+        <TableRow key={entry?.id || Math.random().toString()}>
+          <TableCell>{formatDate(entryDate)}</TableCell>
+          <TableCell>{displayValue(entry?.description)}</TableCell>
+          <TableCell>{formatCurrency(entry?.amount)}</TableCell>
+          <TableCell>{displayValue(entry?.category)}</TableCell>
+          <TableCell>
+            <TableActions>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handleEdit({
+                  id: entry?.id,
+                  date: entryDate,
+                  description: entry?.description || '',
+                  amount: typeof entry?.amount === 'number' ? entry.amount : 0,
+                  category: entry?.category || ''
+                })}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handleDelete(String(entry?.id))}
+                disabled={deleteMutation.isPending || !entry?.id}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </TableActions>
+          </TableCell>
+        </TableRow>
+      );
+    });
   };
 
   return (

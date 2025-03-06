@@ -6,9 +6,19 @@ import { format } from "date-fns";
  * @param currency The currency symbol to use (default: $)
  * @returns Formatted currency string
  */
-export const formatCurrency = (amount: number | null | undefined, currency: string = "$"): string => {
-  if (amount === null || amount === undefined) return `${currency}0.00`;
-  return `${currency}${amount.toFixed(2)}`;
+export const formatCurrency = (amount: number | string | undefined): string => {
+  if (amount === undefined || amount === null) return "—";
+
+  const numericAmount =
+    typeof amount === "string" ? parseFloat(amount) : amount;
+
+  if (isNaN(numericAmount)) return "—";
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  }).format(numericAmount);
 };
 
 /**
@@ -17,15 +27,35 @@ export const formatCurrency = (amount: number | null | undefined, currency: stri
  * @param formatString The date format to use (default: MMM dd, yyyy)
  * @returns Formatted date string
  */
-export const formatDate = (date: string | Date | null | undefined, formatString: string = "MMM dd, yyyy"): string => {
-  if (!date) return "N/A";
-  
+export const formatDate = (date: string | Date | undefined): string => {
+  if (!date) {
+    console.log("formatDate: No date provided");
+    return "—";
+  }
+
   try {
+    console.log("formatDate: Processing date:", date);
+
+    // Handle ISO date strings or date objects
     const dateObj = typeof date === "string" ? new Date(date) : date;
-    if (isNaN(dateObj.getTime())) return "Invalid date";
-    return format(dateObj, formatString);
+
+    // Check if the date is valid
+    if (isNaN(dateObj.getTime())) {
+      console.error("formatDate: Invalid date:", date);
+      return "Invalid date";
+    }
+
+    // Format date as MM/DD/YYYY
+    const month = (dateObj.getMonth() + 1).toString().padStart(2, "0");
+    const day = dateObj.getDate().toString().padStart(2, "0");
+    const year = dateObj.getFullYear();
+
+    const formatted = `${month}/${day}/${year}`;
+    console.log("formatDate: Formatted result:", formatted);
+
+    return formatted;
   } catch (error) {
-    console.error("Error formatting date:", error);
+    console.error("formatDate: Error formatting date:", date, error);
     return "Error";
   }
 };
@@ -36,7 +66,10 @@ export const formatDate = (date: string | Date | null | undefined, formatString:
  * @param defaultValue The default value to return if value is null/undefined
  * @returns The original value or default value
  */
-export const safeValue = <T>(value: T | null | undefined, defaultValue: T): T => {
+export const safeValue = <T>(
+  value: T | null | undefined,
+  defaultValue: T
+): T => {
   return value === null || value === undefined ? defaultValue : value;
 };
 
@@ -46,8 +79,7 @@ export const safeValue = <T>(value: T | null | undefined, defaultValue: T): T =>
  * @param fallback Fallback text to show if value is null/undefined/empty
  * @returns The original value or fallback text
  */
-export const displayValue = (value: string | number | null | undefined, fallback: string = "N/A"): string => {
-  if (value === null || value === undefined) return fallback;
-  if (value === "") return fallback;
+export const displayValue = (value: any): string => {
+  if (value === undefined || value === null || value === "") return "—";
   return String(value);
-}; 
+};

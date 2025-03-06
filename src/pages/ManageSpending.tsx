@@ -67,6 +67,7 @@ import {
 import { CategoryCombobox, MultiCategoryCombobox } from "@/components/CategoryCombobox";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate, displayValue } from "@/lib/table-utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 // Form validation schemas
 const spendingFormSchema = z.object({
@@ -508,8 +509,20 @@ const ManageSpending = () => {
     updateSpendingMutation.mutate(values);
   };
   
+  // Delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [spendingToDelete, setSpendingToDelete] = useState<number | null>(null);
+
   const handleDeleteSpending = (id: number) => {
-    deleteSpendingMutation.mutate(id);
+    // Instead of deleting immediately, set the spending to delete and open the confirmation dialog
+    setSpendingToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (spendingToDelete !== null) {
+      deleteSpendingMutation.mutate(spendingToDelete);
+    }
   };
   
   const handleOpenEditDialog = (spending: Spending) => {
@@ -1098,6 +1111,18 @@ const ManageSpending = () => {
           </DialogContent>
         </Dialog>
       </div>
+      
+      {/* Add this confirmation dialog to the end */}
+      <ConfirmDialog 
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={confirmDelete}
+        title="Confirm Deletion"
+        description="Are you sure you want to delete this spending record? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        confirmVariant="destructive"
+      />
     </div>
   );
 };

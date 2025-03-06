@@ -51,6 +51,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { format, isValid, parseISO } from "date-fns";
 import { formatCurrency, formatDate, displayValue } from "@/lib/table-utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 // Status codes
 enum BorrowingStatus {
@@ -156,6 +157,8 @@ const ManageBorrowing = () => {
   const [minAmount, setMinAmount] = useState<number | "">("");
   const [maxAmount, setMaxAmount] = useState<number | "">("");
   const [showFilters, setShowFilters] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
 
   const fetchBorrowings = async () => {
     try {
@@ -291,20 +294,28 @@ const ManageBorrowing = () => {
   };
 
   const handleDelete = async (id: string) => {
-    try {
-      await borrowingService.delete(id);
-      fetchBorrowings();
-      fetchSummary();
-      toast({
-        title: "Success",
-        description: "Loan entry deleted successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete borrowing entry",
-        variant: "destructive",
-      });
+    setEntryToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (entryToDelete) {
+      try {
+        await borrowingService.delete(entryToDelete);
+        fetchBorrowings();
+        fetchSummary();
+        toast({
+          title: "Success",
+          description: "Loan entry deleted successfully",
+        });
+        setDeleteConfirmOpen(false);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete borrowing entry",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -816,6 +827,18 @@ const ManageBorrowing = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add the confirmation dialog */}
+      <ConfirmDialog 
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={confirmDelete}
+        title="Confirm Deletion"
+        description="Are you sure you want to delete this borrowing entry? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        confirmVariant="destructive"
+      />
     </div>
   );
 };

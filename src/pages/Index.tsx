@@ -1,4 +1,5 @@
 import { SummaryCard } from "@/components/SummaryCard";
+import { InsightCard } from "@/components/InsightCard";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import { FinanceChart } from "@/components/FinanceChart";
 import { Button } from "@/components/ui/button";
@@ -109,7 +110,12 @@ const Index = () => {
           <SummaryCard
             title="Monthly Earnings"
             amount={`$${summaryData?.monthlyEarnings || 0}`}
-            description="+5.2% from last month"
+            description="Income from all sources this month"
+            trend={{ value: 5.2, isPositive: true }}
+            action={{ 
+              label: "View Details", 
+              onClick: () => navigate("/manage-earnings") 
+            }}
             className="bg-finance-earnings hover:bg-finance-earnings-dark transition-colors"
           >
             <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -117,7 +123,12 @@ const Index = () => {
           <SummaryCard
             title="Total Savings"
             amount={`$${summaryData?.totalSavings || 0}`}
-            description="+20.1% from last month"
+            description="Accumulated savings across all accounts"
+            trend={{ value: 20.1, isPositive: true }}
+            action={{ 
+              label: "Manage Savings", 
+              onClick: () => navigate("/manage-savings") 
+            }}
             className="bg-finance-savings hover:bg-finance-savings-dark transition-colors"
           >
             <PiggyBank className="h-4 w-4 text-muted-foreground" />
@@ -125,7 +136,12 @@ const Index = () => {
           <SummaryCard
             title="Active Loans Given"
             amount={`$${summaryData?.activeLoans || 0}`}
-            description="Next payment: $500 due Apr 1"
+            description={`${summaryData?.lendingCount || 0} active loans`}
+            trend={{ value: 12.3, isPositive: true }}
+            action={{ 
+              label: "View Loans", 
+              onClick: () => navigate("/manage-lending") 
+            }}
             className="bg-finance-lending hover:bg-finance-lending-dark transition-colors"
           >
             <BanknoteIcon className="h-4 w-4 text-muted-foreground" />
@@ -134,6 +150,11 @@ const Index = () => {
             title="Active Borrowings"
             amount={`$${summaryData?.activeBorrowings || 0}`}
             description={`${summaryData?.borrowingCount || 0} active borrowings`}
+            trend={{ value: 3.7, isPositive: false }}
+            action={{ 
+              label: "View Borrowings", 
+              onClick: () => navigate("/manage-borrowing") 
+            }}
             className="bg-finance-borrowing hover:bg-finance-borrowing-dark transition-colors"
           >
             <HandCoins className="h-4 w-4 text-muted-foreground" />
@@ -142,10 +163,59 @@ const Index = () => {
             title="Monthly Spending"
             amount={`$${summaryData?.monthlySpending || 0}`}
             description="75% of monthly budget"
+            trend={{ value: 2.4, isPositive: false }}
+            action={{ 
+              label: "View Expenses", 
+              onClick: () => navigate("/manage-spending") 
+            }}
             className="bg-finance-spending hover:bg-finance-spending-dark transition-colors"
           >
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </SummaryCard>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <InsightCard
+            title="Spending Breakdown"
+            value={summaryData?.monthlySpending || 0}
+            target={3000}
+            status={summaryData?.monthlySpending > 3000 ? 'warning' : 'positive'}
+            insights={[
+              "Housing: 40% of expenses",
+              "Food: 20% of expenses",
+              "Transportation: 15% of expenses"
+            ]}
+            onClick={() => navigate("/manage-spending")}
+            className="bg-gray-50 dark:bg-gray-900"
+          />
+          
+          <InsightCard
+            title="Savings Goal"
+            value={summaryData?.totalSavings || 0}
+            target={10000}
+            status={summaryData?.totalSavings > 5000 ? 'positive' : 'neutral'}
+            insights={[
+              "Emergency fund: 70% complete",
+              "Vacation savings: 30% complete",
+              "Rate of saving: $400/month"
+            ]}
+            onClick={() => navigate("/manage-savings")}
+            className="bg-gray-50 dark:bg-gray-900"
+          />
+          
+          <InsightCard
+            title="Debt Overview"
+            value={summaryData?.activeBorrowings || 0}
+            target={summaryData?.activeBorrowings ? summaryData?.activeBorrowings * 1.5 : 5000}
+            status={summaryData?.activeBorrowings > 3000 ? 'negative' : 'positive'}
+            insights={[
+              "Debt-to-income ratio: 25%",
+              "Next payment due in 15 days",
+              "Interest paid YTD: $320"
+            ]}
+            onClick={() => navigate("/manage-borrowing")}
+            className="bg-gray-50 dark:bg-gray-900"
+          />
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">

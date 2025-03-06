@@ -58,6 +58,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { format, isValid, parseISO } from "date-fns";
 import { formatCurrency, formatDate, displayValue } from "@/lib/table-utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 // Status codes
 enum LendingStatus {
@@ -175,6 +176,9 @@ const ManageLending = () => {
 
   // Editing or adding a new entry
   const [isAddingNew, setIsAddingNew] = useState(true);
+
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
 
   const fetchLendings = async () => {
     try {
@@ -350,20 +354,29 @@ const ManageLending = () => {
   };
 
   const handleDelete = async (id: string) => {
-    try {
-      await lendingService.delete(id);
-      fetchLendings();
-      fetchSummary();
-      toast({
-        title: "Success",
-        description: "Loan entry deleted successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete lending entry",
-        variant: "destructive",
-      });
+    // Instead of immediately deleting, set the entry to delete and open the confirmation dialog
+    setEntryToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (entryToDelete) {
+      try {
+        await lendingService.delete(entryToDelete);
+        fetchLendings();
+        fetchSummary();
+        toast({
+          title: "Success",
+          description: "Loan entry deleted successfully",
+        });
+        setDeleteConfirmOpen(false);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete loan entry",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -885,6 +898,18 @@ const ManageLending = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add the confirmation dialog */}
+      <ConfirmDialog 
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={confirmDelete}
+        title="Confirm Deletion"
+        description="Are you sure you want to delete this lending record? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        confirmVariant="destructive"
+      />
     </div>
   );
 };
